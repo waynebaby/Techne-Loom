@@ -7,6 +7,7 @@ public sealed class WorkflowInstance
     public Dictionary<string, ITaskNode> Nodes { get; set; } = [];
 
     public string? TemplateKind { get; set; }
+    public string? OwnerSkillSlug { get; set; }
 
     public string? TaskType { get; set; }
 

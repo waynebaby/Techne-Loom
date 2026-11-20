@@ -31,6 +31,9 @@ public sealed class AoRuntimeService
         string? auditOutputRoot = null,
         string? workspaceRoot = null)
     {
+        var initialRuntime = string.IsNullOrWhiteSpace(initialInstanceFile)
+            ? null
+            : await _workflowStore.LoadRuntimeWorkflowAsync(initialInstanceFile).ConfigureAwait(false);
         var artifacts = AoSessionArtifactPaths.CreateNew(sessionDirectory);
 
         return await ExecuteWithWorkflowLockAsync(
@@ -61,7 +64,7 @@ public sealed class AoRuntimeService
                     AuditStepSequence: 1);
 
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, snapshot).ConfigureAwait(false);
-                var runtimeWorkflow = await CreateInitialRuntimeWorkflowAsync(artifacts, snapshot, initialInstanceFile).ConfigureAwait(false);
+                var runtimeWorkflow = await CreateInitialRuntimeWorkflowAsync(artifacts, snapshot, initialInstanceFile, initialRuntime).ConfigureAwait(false);
                 await AoRuntimeWorkflowBridge.EnrichContractContextAsync(runtimeWorkflow).ConfigureAwait(false);
                 await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, runtimeWorkflow).ConfigureAwait(false);
                 var runtimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
@@ -292,16 +295,16 @@ public sealed class AoRuntimeService
         return runtimeWorkflow;
     }
 
-    private async Task<WorkflowInstance> CreateInitialRuntimeWorkflowAsync(AoSessionArtifacts artifacts, AoWorkflowSnapshot snapshot, string? initialInstanceFile)
+    private static async Task<WorkflowInstance> CreateInitialRuntimeWorkflowAsync(
+        AoSessionArtifacts artifacts, AoWorkflowSnapshot snapshot, string? initialInstanceFile, WorkflowInstance? initialRuntime)
     {
-        if (string.IsNullOrWhiteSpace(initialInstanceFile))
+        if (initialRuntime is null || string.IsNullOrWhiteSpace(initialInstanceFile))
         {
             return AoRuntimeWorkflowBridge.CreateInitialRuntimeWorkflow(artifacts.SessionId, snapshot);
         }
 
         await WriteRuntimeWorkflowPointerAsync(artifacts.RuntimeWorkflowPointerFile, initialInstanceFile).ConfigureAwait(false);
-        var authoredRuntime = await _workflowStore.LoadRuntimeWorkflowAsync(initialInstanceFile).ConfigureAwait(false);
-        return AoRuntimeWorkflowBridge.SeedRuntimeWorkflow(authoredRuntime, artifacts.SessionId, snapshot);
+        return AoRuntimeWorkflowBridge.SeedRuntimeWorkflow(initialRuntime, artifacts.SessionId, snapshot);
     }
 
     private static async Task<string> ResolveCurrentRuntimeWorkflowFileAsync(AoSessionArtifacts artifacts)
@@ -315,7 +318,7 @@ public sealed class AoRuntimeService
         return artifacts.RuntimeWorkflowFile;
     }
 
-    private static async Task<string?> ReadRuntimeWorkflowPointerAsync(string pointerFile)
+    internal static async Task<string?> ReadRuntimeWorkflowPointerAsync(string pointerFile)
     {
         if (!File.Exists(pointerFile))
         {

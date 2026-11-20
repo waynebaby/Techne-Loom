@@ -6,7 +6,7 @@ namespace Techne.Loom.SkillOrchestrator.Validation;
 
 internal static class WorkflowValidator
 {
-    private const string GovernedTemplateKind = "so-governed-target-skill";
+    private const string GovernedTemplateKind = WorkflowIdentityContract.GovernedSkillTemplateKind;
     private static readonly string[] BuiltInReservedRuntimeOwnedFields =
     [
         "workflow_file",
@@ -34,13 +34,14 @@ internal static class WorkflowValidator
 
     public static async Task<WorkflowValidationResult> ValidateWithContextFieldCatalogAsync(
         WorkflowInstance instance,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? workflowFile = null)
     {
         ArgumentNullException.ThrowIfNull(instance);
         try
         {
             var read = await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance, ct: ct).ConfigureAwait(false);
-            return ValidateWithContextFieldCatalog(instance, read.Catalog);
+            return ValidateWithContextFieldCatalog(instance, read.Catalog, workflowFile);
         }
         catch (Exception exception) when (exception is IOException
             or UnauthorizedAccessException
@@ -48,11 +49,11 @@ internal static class WorkflowValidator
             or ArgumentException
             or System.Text.Json.JsonException)
         {
-            return ValidateCore(instance, null, exception.Message, requireContextFieldCatalog: true);
+            return ValidateCore(instance, null, exception.Message, requireContextFieldCatalog: true, workflowFile: workflowFile);
         }
     }
 
-    internal static WorkflowValidationResult ValidateWithContextFieldCatalog(WorkflowInstance instance, ContextFieldCatalog catalog)
+    internal static WorkflowValidationResult ValidateWithContextFieldCatalog(WorkflowInstance instance, ContextFieldCatalog catalog, string? workflowFile = null)
     {
         string? contextValueError = null;
         try
@@ -64,7 +65,7 @@ internal static class WorkflowValidator
             contextValueError = exception.Message;
         }
 
-        return ValidateCore(instance, catalog, null, requireContextFieldCatalog: true, contextValueError);
+        return ValidateCore(instance, catalog, null, requireContextFieldCatalog: true, contextValueError, workflowFile);
     }
 
     private static WorkflowValidationResult ValidateCore(
@@ -72,7 +73,8 @@ internal static class WorkflowValidator
         ContextFieldCatalog? contextFieldCatalog,
         string? catalogLoadError,
         bool requireContextFieldCatalog,
-        string? contextValueError = null)
+        string? contextValueError = null,
+        string? workflowFile = null)
     {
         ArgumentNullException.ThrowIfNull(instance);
 
@@ -132,7 +134,7 @@ internal static class WorkflowValidator
         RunPhase(result, "governance", [], () =>
         {
             ValidateGovernedTemplateContract(instance, transitions, result);
-            ValidateWorkflowIdentity(instance, transitions, result);
+            ValidateWorkflowIdentity(instance, transitions, result, workflowFile);
             ValidateSeamOwnership(instance, transitions, result);
             ValidateBusinessContract(instance, transitions, result);
         });
@@ -179,8 +181,19 @@ internal static class WorkflowValidator
     private static void ValidateWorkflowIdentity(
         WorkflowInstance instance,
         IReadOnlyDictionary<string, TransitionBase> transitions,
-        WorkflowValidationResult result)
+        WorkflowValidationResult result,
+        string? workflowFile)
     {
+        var fileNameError = CanonicalWorkflowFileStore.GetSkillFileNameError(instance, workflowFile);
+        if (fileNameError is not null)
+        {
+            result.Add(
+                BusinessGateRule,
+                fileNameError,
+                "ownerSkillSlug/workflowFile",
+                CanonicalWorkflowFileStore.SkillFileNameSuggestedFix);
+        }
+
         if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
         {
             return;

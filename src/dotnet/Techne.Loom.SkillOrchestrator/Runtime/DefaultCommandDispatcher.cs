@@ -210,15 +210,20 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
                 $"workflow.materializeRuntimeCopy could not find source template '{sourceTemplatePath}' resolved to '{resolvedSourceTemplatePath}'.");
         }
 
-        var runtimeDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-runtime-copy-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(runtimeDirectory);
-        var runtimeCopyPath = Path.Combine(runtimeDirectory, "workflow.current.json");
         var runtimeWorkflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(resolvedSourceTemplatePath));
+        CanonicalWorkflowFileStore.EnsureSkillFileName(runtimeWorkflow, resolvedSourceTemplatePath);
         if (WorkflowIdentityContract.IsTemplateRunId(runtimeWorkflow.RunId))
         {
             runtimeWorkflow.RunId = WorkflowIdentityContract.CreateRuntimeRunId();
         }
 
+        var runtimeDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-runtime-copy-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(runtimeDirectory);
+        var runtimeCopyFileName = string.IsNullOrWhiteSpace(runtimeWorkflow.OwnerSkillSlug)
+            ? "workflow.current.json"
+            : $"{runtimeWorkflow.OwnerSkillSlug}--workflow.current.json";
+        var runtimeCopyPath = Path.Combine(runtimeDirectory, runtimeCopyFileName);
+        CanonicalWorkflowFileStore.EnsureSkillFileName(runtimeWorkflow, runtimeCopyPath);
         var temporaryPath = runtimeCopyPath + ".tmp";
         try
         {

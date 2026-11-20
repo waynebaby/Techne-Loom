@@ -381,10 +381,10 @@ The commands below outline the lifecycle; the file names are placeholders, so th
 ```bash
 ./loom --guide
 ./loom skill --schema-demo-output outputs/schema-demo
-./loom skill compile --workflow-file so-template.json --audit-output outputs/compile-audit
-./loom skill run --workflow-file workflow-instance.json --context-file context.json --operation-id run-001 --audit-output outputs/run-audit
-./loom skill resume --workflow-file workflow-instance.json --result-file resume.json --operation-id resume-001 --audit-output outputs/run-audit
-./loom skill status --workflow-file workflow-instance.json
+./loom skill compile --workflow-file my-skill--so-template.json --audit-output outputs/compile-audit
+./loom skill run --workflow-file my-skill--workflow.current.json --context-file context.json --operation-id run-001 --audit-output outputs/run-audit
+./loom skill resume --workflow-file my-skill--workflow.current.json --result-file resume.json --operation-id resume-001 --audit-output outputs/run-audit
+./loom skill status --workflow-file my-skill--workflow.current.json
 ```
 
 Read the `guide_path` returned by `--guide`; use the matching schema/demo to author a real template, then compile it. Run and resume the same external workflow instance. If execution pauses at an external seam, complete the requested work and provide its structured result file before resuming. All input files named by `*-file` options must be complete on disk before the command starts. Compile validates the contract; it does not prove domain quality or final completion.

@@ -452,7 +452,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
     {
         var repoRoot = FindRepositoryRoot();
         var targetSkillPath = GetLoomSkillEnhancementRoot(repoRoot);
-        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "so-template.json");
+        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
         var materializeRuntimeCopy = Assert.IsType<CommandTransition>(instance.Nodes["transition.materialize_runtime_copy"]);
         materializeRuntimeCopy.Command.Parameters!["sourceTemplatePath"] = workflowFile;
@@ -587,7 +587,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
     {
         var repoRoot = FindRepositoryRoot();
         var targetSkillPath = GetLoomSkillEnhancementRoot(repoRoot);
-        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "so-template.json");
+        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
 
         instance.InstanceId = $"loom-skill-enhancement-missing-review-fix-{Guid.NewGuid():N}";
@@ -621,7 +621,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
     {
         var repoRoot = FindRepositoryRoot();
         var targetSkillPath = GetLoomSkillEnhancementRoot(repoRoot);
-        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "so-template.json");
+        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
         var materializeRuntimeCopy = Assert.IsType<CommandTransition>(instance.Nodes["transition.materialize_runtime_copy"]);
         materializeRuntimeCopy.Command.Parameters!["sourceTemplatePath"] = workflowFile;
@@ -744,7 +744,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
     public void LoomSkillEnhancementTemplateGateExpressionsRejectFailedMermaidDelivery()
     {
         var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow", "so-template.json");
+        var workflowFile = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(workflowFile));
         Assert.NotNull(workflow.Validation);
         var validation = workflow.Validation!;
@@ -919,8 +919,8 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 File.Copy(file, copyPath, overwrite: true);
             }
         }
-        var sourceWorkflowFile = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
-        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-runtime-{Guid.NewGuid():N}.json");
+        var sourceWorkflowFile = Path.Combine(skillRoot, "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"loom-skill-enhancement--test-runtime-{Guid.NewGuid():N}.json");
         var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-context-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-audit-{Guid.NewGuid():N}");
 
@@ -1083,7 +1083,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 {
                     new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
-                        ["path"] = "assets/so-workflow/so-template.json",
+                        ["path"] = "assets/so-workflow/loom-skill-enhancement--so-template.json",
                         ["kind"] = "workflow_hint",
                         ["startLine"] = (long)index + 1,
                         ["endLine"] = (long)index + 1,
@@ -1108,7 +1108,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
             var changedFiles = new[]
             {
                 "SKILL.md",
-                "assets/so-workflow/so-template.json",
+                "assets/so-workflow/loom-skill-enhancement--so-template.json",
                 "assets/so-workflow/node-to-file-map.md"
             };
             var sources = changedFiles.Concat(new[] { "assets/so-workflow/contract.json" }).Concat(Directory.EnumerateFiles(skillRoot, "*.agent.md", SearchOption.AllDirectories).Select(path => Path.GetRelativePath(skillRoot, path).Replace(Path.DirectorySeparatorChar, (char)47))).ToArray();
@@ -1245,7 +1245,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                     },
                     ["evidence_references"] = new object?[]
                     {
-                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["path"] = "assets/so-workflow/so-template.json", ["start_line"] = 1, ["end_line"] = 1, ["role"] = "Current workflow template" },
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["path"] = "assets/so-workflow/loom-skill-enhancement--so-template.json", ["start_line"] = 1, ["end_line"] = 1, ["role"] = "Current workflow template" },
                         new Dictionary<string, object?>(StringComparer.Ordinal) { ["path"] = "contract.json", ["start_line"] = 1, ["end_line"] = 1, ["role"] = "Strategy contract" },
                     },
                 },
@@ -1574,7 +1574,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 {
                     ["status"] = "repaired",
                     ["post_fix_review_sources_file"] = ReviewSourcesFile(),
-                    ["changed_files"] = new[] { "SKILL.md", "assets/so-workflow/so-template.json", "assets/so-workflow/node-to-file-map.md" },
+                    ["changed_files"] = new[] { "SKILL.md", "assets/so-workflow/loom-skill-enhancement--so-template.json", "assets/so-workflow/node-to-file-map.md" },
                     ["finding_to_change_mapping"] = new[] { "all findings considered together" },
                 },
             });

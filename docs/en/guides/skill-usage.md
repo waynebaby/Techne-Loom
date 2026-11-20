@@ -257,7 +257,7 @@ Goal: upgrade this deterministic skill under Loom Skill Orchestrator governance
 Requested skill changes:
 - refresh SKILL.md governance wording
 - create the runtime-owned plan under <execution-output-root>/plan/skill-plan.md
-- create or refresh assets/so-workflow/so-template.json
+- create or refresh assets/so-workflow/my-skill--so-template.json
 - align assets/so-workflow/so-package-lock.json
 ```
 

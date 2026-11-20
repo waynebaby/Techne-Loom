@@ -153,8 +153,8 @@ Receipt modes use the operation ID carried by the receipt or submission and reje
 The offline HTML copy includes metadata for existing attachments; the downloaded JSON keeps their IDs but contains neither metadata nor bytes. Offline copies cannot download existing attachments or upload new ones.
 
 ```powershell
-.\loom.exe skill resume --workflow-file workflow.json --ask-id <ask-id>
-.\loom.exe skill resume --workflow-file workflow.json --offline-submission-file submission.json
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --ask-id <ask-id>
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --offline-submission-file submission.json
 ```
 
 ## Guide Output
@@ -179,10 +179,10 @@ The command accepts no extra arguments. Read the returned `guide_path`; inspect 
 .\loom.exe ask result --ask-id <ask-id>
 .\loom.exe ask wait --ask-id <ask-id>
 .\loom.exe skill --schema-demo-output outputs\schema-demo
-.\loom.exe skill compile --workflow-file so-template.json --audit-output outputs\audit
+.\loom.exe skill compile --workflow-file my-skill--so-template.json --audit-output outputs\audit
 .\loom.exe skill mcp generate-config --output-file outputs\mcp.json --format vscode
-.\loom.exe skill resume --workflow-file workflow.json --ask-id <ask-id>
-.\loom.exe skill resume --workflow-file workflow.json --offline-submission-file submission.json
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --ask-id <ask-id>
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --offline-submission-file submission.json
 ```
 
 On Unix, use `./loom --guide` for the shared guide and prefix Skill Orchestrator commands with `./loom skill`. Run `./loom skill --help` to check the exact installed version's module command surface.

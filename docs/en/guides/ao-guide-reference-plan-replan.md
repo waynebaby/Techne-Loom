@@ -198,7 +198,7 @@ Every strategy must return a candidate path from its selected anchor to the term
 
 When `run` executes without `--instance-file`, AO still emits valid runtime audit artifacts, but the graph mode is `minimal-sidecar-only`: it guarantees that the blocked seam, wait-resume transition, and boundary metadata remain auditable, but it is not equivalent to a full caller-authored execution graph.
 
-When `run --instance-file <path>` is used explicitly, AO tries to preserve graph continuity across compile, prompt-plan, the first blocked runtime audit, and later replans. In that mode, `workflow_instance_file` should be treated as the primary graph source for audit continuity.
+For a generic workflow, legacy `run --instance-file <path>` tries to preserve graph continuity across compile, prompt-plan, the first blocked runtime audit, and later replans. In that mode, `workflow_instance_file` is the primary graph source for audit continuity. Legacy session run, replan and resume reject skill-owned workflows rather than creating or switching to a session copy; use the canonical `--workflow-file` route for compatible copies. Preserve existing legacy sessions; this guard does not migrate or replay them.
 
 Do not reuse a prior `transition_id` after AO has moved to a newer blocked seam. Runtime rejects resumes whose `transition_id` does not match the currently blocked transition.
 

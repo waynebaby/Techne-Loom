@@ -198,7 +198,7 @@ planner 必须明确选择以下一种 strategy：
 
 当 `run` 没有传入 `--instance-file` 时，AO 仍会生成合法的 runtime audit artifact，但当前图模式是 `minimal-sidecar-only`：它只保证 blocked seam、wait-resume transition 与 boundary metadata 可审计，并不等价于一份 caller-authored 的完整执行图。
 
-当 `run --instance-file <path>` 被显式使用时，AO 会尽量保持 compile、prompt-plan、首次 blocked runtime audit 与后续 replan 之间的图连续性；这种情况下 `workflow_instance_file` 应被视为当前审计连续性的主图源。
+对于普通 workflow，旧版 `run --instance-file <path>` 会尽量保持 compile、prompt-plan、首次 blocked runtime audit 与后续 replan 的图连续性，此时 `workflow_instance_file` 是审计连续性的主图源。旧版 session run、replan 和 resume 会拒绝属于 skill 的 workflow，避免创建或切换到 session 副本；兼容副本请使用 canonical `--workflow-file` 路由。已有 legacy session 应予保留，此保护不会自动迁移或重放。
 
 禁止在 AO 已移动到新 blocked seam 后复用旧 `transition_id`。当 `transition_id` 与当前 blocked seam 不匹配时，runtime 会拒绝 resume。
 

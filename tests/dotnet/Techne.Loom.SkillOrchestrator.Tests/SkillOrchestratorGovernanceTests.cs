@@ -100,7 +100,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     public async Task CliCompile_GovernedWorkflowWithBusinessGate_Succeeds()
     {
         var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-valid-{Guid.NewGuid():N}.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"fixture-skill--governed-valid-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-valid-audit-{Guid.NewGuid():N}");
         await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateGovernedWorkflow()));
 
@@ -139,7 +139,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     public async Task CliCompile_GovernedGroupJoinStateCanReachTerminalTransition()
     {
         var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-group-join-reachability-{Guid.NewGuid():N}.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"fixture-skill--group-join-{Guid.NewGuid():N}.json");
         var workflow = CreateGovernedWorkflow();
         var start = Assert.IsType<StateNode>(workflow.Nodes[workflow.StartNodeId]);
         var first = new CommandTransition
@@ -208,7 +208,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     public async Task CliCompile_GovernedBlockedPublisherWithoutGate_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-ungated-blocked-publisher-{Guid.NewGuid():N}.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"fixture-skill--ungated-{Guid.NewGuid():N}.json");
         var workflow = CreateGovernedWorkflow();
         workflow.Nodes["transition.ungated_wait"] = new CommandTransition
         {
@@ -236,7 +236,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     [Fact]
     public async Task AoGovernedTemplate_RequiresTypedTerminalEvidenceGuards()
     {
-        var workflowFile = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json");
+        var workflowFile = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "loom-plan-execution--so-template.json");
         using var document = JsonDocument.Parse(await File.ReadAllTextAsync(workflowFile));
         var nodes = document.RootElement.GetProperty("nodes");
 
@@ -266,17 +266,28 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     {
         var root = FindRepositoryRoot();
         var skillRoot = Path.Combine(root, ".agents", "skills", "loom-plan-execution");
-        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "loom-plan-execution--so-template.json");
         using var template = System.Text.Json.JsonDocument.Parse(File.ReadAllText(templatePath));
+        Assert.Equal("loom-plan-execution", template.RootElement.GetProperty("ownerSkillSlug").GetString());
+        Assert.StartsWith("loom-plan-execution--", Path.GetFileName(templatePath), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json")));
         Assert.DoesNotContain(".agents/skills/loom-plan-execution", File.ReadAllText(templatePath), StringComparison.Ordinal);
         Assert.Equal(".", template.RootElement.GetProperty("context").GetProperty("target_skill_path").GetString());
         var contractPath = Path.Combine(skillRoot, "assets", "so-workflow", "contract.json");
         using var contract = System.Text.Json.JsonDocument.Parse(File.ReadAllText(contractPath));
-        var field = Assert.Single(contract.RootElement.GetProperty("context_fields").GetProperty("fields").EnumerateArray(),
-            item => item.GetProperty("path").GetString() == "target_skill_path");
+        var fields = contract.RootElement.GetProperty("context_fields").GetProperty("fields").EnumerateArray().ToArray();
+        var field = Assert.Single(fields, item => item.GetProperty("path").GetString() == "target_skill_path");
         Assert.Equal("string", field.GetProperty("type").GetString());
         Assert.False(field.GetProperty("nullable").GetBoolean());
         Assert.Equal("caller", field.GetProperty("owner").GetString());
+        var requestedOutcome = Assert.Single(fields, item => item.GetProperty("path").GetString() == "plan.requested_business_outcome");
+        Assert.Equal("string", requestedOutcome.GetProperty("type").GetString());
+        Assert.False(requestedOutcome.GetProperty("nullable").GetBoolean());
+        Assert.Equal("caller", requestedOutcome.GetProperty("owner").GetString());
+        var terminalObjective = Assert.Single(fields, item => item.GetProperty("path").GetString() == "terminal_business_objective");
+        Assert.Equal("string", terminalObjective.GetProperty("type").GetString());
+        Assert.False(terminalObjective.GetProperty("nullable").GetBoolean());
+        Assert.Equal("caller", terminalObjective.GetProperty("owner").GetString());
     }
 
     [Fact]
@@ -284,7 +295,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     {
         var root = FindRepositoryRoot();
         var skillRoot = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement");
-        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var templateText = File.ReadAllText(templatePath);
         using var template = System.Text.Json.JsonDocument.Parse(templateText);
         Assert.DoesNotContain(".agents/skills/loom-skill-enhancement", templateText, StringComparison.Ordinal);
@@ -304,12 +315,12 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     {
         var repoRoot = FindRepositoryRoot();
         var skillRoot = Path.Combine(repoRoot, ".agents", "skills", "loom-plan-execution");
-        var sourceWorkflowFile = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        var sourceWorkflowFile = Path.Combine(skillRoot, "assets", "so-workflow", "loom-plan-execution--so-template.json");
         var testRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-plan-governance-{Guid.NewGuid():N}");
         Directory.CreateDirectory(testRoot);
         try
         {
-            var workflowFile = Path.Combine(testRoot, "workflow.json");
+            var workflowFile = Path.Combine(testRoot, "loom-plan-execution--workflow.json");
             var auditDirectory = Path.Combine(testRoot, "audit");
             var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
             workflow.Context["target_skill_path"] = skillRoot;
@@ -339,8 +350,8 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     {
         var repoRoot = FindRepositoryRoot();
         var skillWorkflowRoot = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow");
-        var sourceWorkflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-bootstrap-template-{Guid.NewGuid():N}.json");
+        var sourceWorkflowFile = Path.Combine(skillWorkflowRoot, "loom-skill-enhancement--so-template.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"loom-skill-enhancement--test-{Guid.NewGuid():N}.json");
         var skillPlanFile = Path.Combine(skillWorkflowRoot, "skill-plan.md");
         var lockFile = Path.Combine(skillWorkflowRoot, "so-package-lock.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-bootstrap-audit-{Guid.NewGuid():N}");
@@ -406,7 +417,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     {
         var repoRoot = FindRepositoryRoot();
         var skillWorkflowRoot = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow");
-        var workflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
+        var workflowFile = Path.Combine(skillWorkflowRoot, "loom-skill-enhancement--so-template.json");
         var nodeMapFile = Path.Combine(skillWorkflowRoot, "node-to-file-map.md");
         var skillPlanFile = Path.Combine(skillWorkflowRoot, "skill-plan.md");
 
@@ -628,7 +639,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         Assert.Contains("shared_review_context", strategyInputs.Select(Convert.ToString));
         Assert.Contains("requested_target_skill_changes", strategyInputs.Select(Convert.ToString));
         var strategySourceDocuments = Assert.IsAssignableFrom<IEnumerable<object?>>(judgeReenhancementTemplateStrategy.Command.Parameters!["source_documents"]);
-        Assert.Contains("assets/so-workflow/so-template.json", strategySourceDocuments.Select(Convert.ToString));
+        Assert.Contains("assets/so-workflow/loom-skill-enhancement--so-template.json", strategySourceDocuments.Select(Convert.ToString));
         Assert.Contains("reference/so-skill-reference.md", strategySourceDocuments.Select(Convert.ToString));
         Assert.Contains("assets/so-workflow/contract.json", strategySourceDocuments.Select(Convert.ToString));
 

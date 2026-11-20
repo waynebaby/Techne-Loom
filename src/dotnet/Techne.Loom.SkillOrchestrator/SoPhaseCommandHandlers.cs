@@ -76,7 +76,7 @@ internal static class SoPhaseCommandHandlers
         var skeleton = await ReadSkeletonAsync(files["--skeleton-file"]).ConfigureAwait(false);
         var results = await ReadPhaseResultsAsync(files, "--result-file", resultFiles.Count).ConfigureAwait(false);
         var candidate = WorkflowPhaseMerger.Merge(template, skeleton, catalog, results);
-        var compileValidation = await WorkflowValidator.ValidateWithContextFieldCatalogAsync(candidate).ConfigureAwait(false);
+        var compileValidation = await WorkflowValidator.ValidateWithContextFieldCatalogAsync(candidate, workflowFile: fullOutputFile).ConfigureAwait(false);
         if (compileValidation.HasErrors)
         {
             throw new InvalidOperationException(

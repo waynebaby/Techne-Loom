@@ -58,6 +58,10 @@ Before one CLI call, the caller must prepare the complete input set on disk and 
 
 Do not pass script source, JSON, patch replacement text, or reference content inline. Do not ask the CLI or a later step to create a missing input or repair an earlier partial file. The CLI preflights all required input files before reading or writing. Destination files such as candidate, verification, and audit outputs may be created by the CLI.
 
+## Workflow Template And Execution-Copy Identity
+
+All skill-owned workflow templates and new execution copies use `<ownerSkillSlug>--<purpose>.json`. This skill uses `loom-plan-execution` as its `ownerSkillSlug`; migrate legacy unprefixed templates when updating them. The first run creates one prefixed external copy, and every `resume` reuses that exact file and preserves its `caseId`/`runId` without recopying, renaming, or creating a new instance.
+
 ## Selective JSON Reading
 
 For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspection: use search or regex only to locate the target key or path, then read a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. Read the full JSON only when the user explicitly requests it or whole-document validation requires it. This rule applies to JSON data; `.agent.md` role contracts remain a separate full-read requirement. For large workflows and review results, return an existing readable file path plus a bounded status/summary, needed JSON Pointer fragments, and evidence locations. Do not dump the complete workflow JSON into the conversation. Whole-document parsing or validation stays file-backed; full conversational output requires an explicit request and applicable size limits.
@@ -75,7 +79,7 @@ Follow the current skill package version block first, then derive the matching p
 - SO governance designer-contract review: [Workflow Designer Contract Reviewer](assets/agents/loom-plan-execution-workflow-designer-contract-reviewer.agent.md). Its versioned summary and report are unconfirmed agent analysis, not human approval; independently validate the same instance, current wait, report, and exact citations before continuing. Until a deployable verifier exists, leave this review waiting.
 - Loom Skill Orchestrator governance baseline assets for AO enhancement:
 	- Per-run plan output: `<execution-output-root>/plan/skill-plan.md` (runtime-owned; not a stable skill asset)
-	- `assets/so-workflow/so-template.json`
+	- `assets/so-workflow/loom-plan-execution--so-template.json`
 	- `assets/so-workflow/so-package-lock.json`
 	- `assets/so-workflow/node-to-file-map.md`
 - `assets/so-workflow/reference/ao/runtime-contracts.md`

@@ -33,7 +33,18 @@ internal sealed class AoWorkflowStore
     public async Task<WorkflowInstance> LoadRuntimeWorkflowAsync(string workflowFile)
     {
         var json = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
-        return WorkflowJsonSerializer.Deserialize(json);
+        var instance = WorkflowJsonSerializer.Deserialize(json);
+        EnsureSessionCompatible(instance);
+        return instance;
+    }
+
+    internal static void EnsureSessionCompatible(WorkflowInstance instance)
+    {
+        if (WorkflowIdentityContract.IsSkillOwnedWorkflow(instance))
+        {
+            throw new InvalidOperationException(
+                "Skill-owned workflows are not supported by legacy session commands because those commands create a separate session copy. Use --workflow-file for compatible copies. Preserve existing legacy sessions; this guard does not migrate or replay them.");
+        }
     }
 
     private static void EnsureParentDirectory(string path)

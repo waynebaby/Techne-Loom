@@ -107,6 +107,56 @@ public sealed class WorkflowBuilderExportCliTests
         }
     }
 
+    [Fact]
+    public async Task EditMode_RequiresSkillPrefixForOwnedOutput()
+    {
+        var root = Directory.CreateTempSubdirectory("loom-so-builder-skill-name-").FullName;
+        try
+        {
+            var demo = await WorkflowSchemaDemoExporter.WriteAsync(root, "dotnet-so", SkillCli.GetRuntimeVersion());
+            var script = Path.Combine(root, "edit.cs");
+            var input = Path.Combine(root, "input.json");
+            var invalid = Path.Combine(root, "candidate.json");
+            var valid = Path.Combine(root, "sample-skill--candidate.json");
+            await File.WriteAllTextAsync(script, "using Techne.Loom.Abstractions.TaskTracking.Model; namespace Techne.Loom.WorkflowScripts; public static class WorkflowInstanceBuilder { public static WorkflowInstance Edit(WorkflowInstance workflow, WorkflowScriptInput input) { workflow.OwnerSkillSlug = \"sample-skill\"; return workflow; } }");
+            await File.WriteAllTextAsync(input, "{\"runtimeBinding\":\"dotnet-so\"}");
+
+            var rejected = await RunCliAsync($"--workflow-script --mode edit --script-file \"{script}\" --input-file \"{input}\" --base-workflow-file \"{demo.DemoFile}\" --output-file \"{invalid}\"");
+            Assert.NotEqual(0, rejected.ExitCode);
+            Assert.Contains("must begin with", rejected.StdOut + rejected.StdErr, StringComparison.Ordinal);
+            Assert.False(File.Exists(invalid));
+
+            var accepted = await RunCliAsync($"--workflow-script --mode edit --script-file \"{script}\" --input-file \"{input}\" --base-workflow-file \"{demo.DemoFile}\" --output-file \"{valid}\"");
+            Assert.True(accepted.ExitCode == 0, accepted.StdOut + accepted.StdErr);
+            Assert.Equal("sample-skill", WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(valid)).OwnerSkillSlug);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AsyncCatalogValidationRejectsInvalidContextValuesAndInvalidFileNames()
+    {
+        var root = Directory.CreateTempSubdirectory("loom-so-catalog-path-").FullName;
+        try
+        {
+            var demo = await WorkflowSchemaDemoExporter.WriteAsync(root, "dotnet-so", SkillCli.GetRuntimeVersion());
+            var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(demo.DemoFile));
+            workflow.OwnerSkillSlug = "sample-skill";
+            workflow.Context["request"] = true;
+            var result = await Techne.Loom.SkillOrchestrator.Validation.WorkflowValidator.ValidateWithContextFieldCatalogAsync(
+                workflow, workflowFile: Path.Combine(root, "wrong.json"));
+            Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "SO_CONTEXT_FIELDS.VALUE_INVALID");
+            Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Message.Contains("must begin with", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(string arguments)
     {
         var assemblyPath = typeof(WorkflowBuilderExportCliTests).Assembly.Location;

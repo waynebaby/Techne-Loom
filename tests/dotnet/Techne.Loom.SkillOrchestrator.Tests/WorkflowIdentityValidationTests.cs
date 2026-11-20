@@ -88,7 +88,7 @@ public sealed class WorkflowIdentityValidationTests
             "loom-skill-enhancement",
             "assets",
             "so-workflow",
-            "so-template.json");
+            "loom-skill-enhancement--so-template.json");
         var source = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourcePath));
         var dispatcher = new DefaultCommandDispatcher();
         var runtimePath = Assert.IsType<string>(await dispatcher.ExecuteAsync(
@@ -108,7 +108,7 @@ public sealed class WorkflowIdentityValidationTests
         try
         {
             var runtime = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(runtimePath));
-
+            Assert.Equal("loom-skill-enhancement--workflow.current.json", Path.GetFileName(runtimePath));
             Assert.Equal(source.CaseId, runtime.CaseId);
             Assert.NotEqual(source.RunId, runtime.RunId);
             Assert.StartsWith("run-", runtime.RunId);
@@ -134,6 +134,109 @@ public sealed class WorkflowIdentityValidationTests
         Assert.False(string.IsNullOrWhiteSpace(workflow.RunId));
     }
 
+    [Fact]
+    public void WorkflowIdentityContract_DoesNotTreatGenericSchemaDemosAsSkillOwned()
+    {
+        var workflow = new WorkflowInstance { TemplateKind = "schema-demo" };
+        var workflowFile = Path.Combine(Path.GetTempPath(), "workflow.demo.json");
+
+        Assert.False(WorkflowIdentityContract.IsSkillOwnedWorkflow(workflow));
+        Assert.Null(CanonicalWorkflowFileStore.GetSkillFileNameError(workflow, workflowFile));
+    }
+
+    [Fact]
+    public void SkillWorkflowFileName_RequiresDoubleDashPrefixAndJsonPurpose()
+    {
+        var workflow = new WorkflowInstance { OwnerSkillSlug = "sample-skill" };
+        var validPath = Path.Combine(Path.GetTempPath(), "sample-skill--template.json");
+        var singleDashPath = Path.Combine(Path.GetTempPath(), "sample-skill-template.json");
+        var emptyPurposePath = Path.Combine(Path.GetTempPath(), "sample-skill--.json");
+        var wrongExtensionPath = Path.Combine(Path.GetTempPath(), "sample-skill--template.txt");
+
+        Assert.Null(CanonicalWorkflowFileStore.GetSkillFileNameError(workflow, validPath));
+        Assert.Contains("must begin with 'sample-skill--'", CanonicalWorkflowFileStore.GetSkillFileNameError(workflow, singleDashPath));
+        Assert.Contains("non-empty purpose", CanonicalWorkflowFileStore.GetSkillFileNameError(workflow, emptyPurposePath));
+        Assert.Contains("must use the '.json' extension", CanonicalWorkflowFileStore.GetSkillFileNameError(workflow, wrongExtensionPath));
+    }
+
+    [Fact]
+    public void SkillWorkflowPath_RequiresMatchingDeclaredOwner()
+    {
+        var workflowFile = Path.Combine(
+            Path.GetTempPath(),
+            ".agents",
+            "skills",
+            "sample-skill",
+            "assets",
+            "so-workflow",
+            "sample-skill--template.json");
+
+        Assert.Contains("must declare ownerSkillSlug", CanonicalWorkflowFileStore.GetSkillFileNameError(new WorkflowInstance(), workflowFile));
+        Assert.Contains(
+            "must match skill directory 'sample-skill'",
+            CanonicalWorkflowFileStore.GetSkillFileNameError(new WorkflowInstance { OwnerSkillSlug = "other-skill" }, workflowFile));
+        Assert.Null(CanonicalWorkflowFileStore.GetSkillFileNameError(new WorkflowInstance { OwnerSkillSlug = "sample-skill" }, workflowFile));
+    }
+
+    [Fact]
+    public void OwnerSkillSlug_RoundTripsAndClones()
+    {
+        var workflow = new WorkflowInstance { OwnerSkillSlug = "sample-skill" };
+        var roundTrip = WorkflowJsonSerializer.Deserialize(WorkflowJsonSerializer.Serialize(workflow, indented: false));
+
+        Assert.Equal("sample-skill", roundTrip.OwnerSkillSlug);
+        Assert.Equal("sample-skill", WorkflowInstanceCloner.Clone(workflow).OwnerSkillSlug);
+    }
+
+    [Fact]
+    public void ClaudeSkillWorkflowPath_RequiresMatchingDeclaredOwner()
+    {
+        var workflowFile = Path.Combine(
+            Path.GetTempPath(),
+            ".claude",
+            "skills",
+            "sample-skill",
+            "assets",
+            "so-workflow",
+            "sample-skill--template.json");
+
+        Assert.Contains("must declare ownerSkillSlug", CanonicalWorkflowFileStore.GetSkillFileNameError(new WorkflowInstance(), workflowFile));
+        Assert.Contains(
+            "must match skill directory 'sample-skill'",
+            CanonicalWorkflowFileStore.GetSkillFileNameError(new WorkflowInstance { OwnerSkillSlug = "other-skill" }, workflowFile));
+        Assert.Null(CanonicalWorkflowFileStore.GetSkillFileNameError(new WorkflowInstance { OwnerSkillSlug = "sample-skill" }, workflowFile));
+    }
+
+    [Fact]
+    public async Task WorkflowIdentityAssignment_IsAllowedInWorkflowBuilderScripts()
+    {
+        var scriptFile = Path.Combine(Path.GetTempPath(), $"loom-script-owner-skill-{Guid.NewGuid():N}.cs");
+        await File.WriteAllTextAsync(
+            scriptFile,
+            "public static class S { public static WorkflowInstance Build(WorkflowScriptInput input) => new WorkflowInstance { OwnerSkillSlug = \"sample-skill\", TaskType = \"requirement_generation\", WorkflowKind = \"target_skill_business\", CaseId = \"case-601\", RunId = \"run-601\", RuntimeBinding = input.RuntimeBinding, RuntimeVersion = input.RuntimeVersion }; }");
+
+        try
+        {
+            var execution = await new WorkflowScriptHost().ExecuteBuilderAsync(
+                scriptFile,
+                new WorkflowScriptInput { RuntimeBinding = "dotnet-so", RuntimeVersion = "0.1.0" });
+
+            Assert.True(execution.IsSuccess, execution.Feedback.Error);
+            Assert.Equal("sample-skill", execution.Value!.OwnerSkillSlug);
+            Assert.Equal("requirement_generation", execution.Value.TaskType);
+            Assert.Equal("target_skill_business", execution.Value.WorkflowKind);
+            Assert.Equal("case-601", execution.Value.CaseId);
+            Assert.Equal("run-601", execution.Value.RunId);
+        }
+        finally
+        {
+            if (File.Exists(scriptFile))
+            {
+                File.Delete(scriptFile);
+            }
+        }
+    }
+
     private static WorkflowInstance LoadSelfBootstrapTemplate()
     {
         var path = Path.Combine(
@@ -143,13 +246,13 @@ public sealed class WorkflowIdentityValidationTests
             "loom-skill-enhancement",
             "assets",
             "so-workflow",
-            "so-template.json");
+            "loom-skill-enhancement--so-template.json");
         return WorkflowJsonSerializer.Deserialize(File.ReadAllText(path));
     }
 
     private static string WriteTemporaryWorkflow(WorkflowInstance workflow, string name)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"techne-loom-{name}-{Guid.NewGuid():N}.json");
+        var path = Path.Combine(Path.GetTempPath(), $"loom-skill-enhancement--{name}-{Guid.NewGuid():N}.json");
         File.WriteAllText(path, WorkflowJsonSerializer.Serialize(workflow));
         return path;
     }

@@ -81,7 +81,8 @@ internal static class AoPhaseCommandHandlers
             candidate,
             catalog,
             catalogLoadError: null,
-            requireContextFieldCatalog: true);
+            requireContextFieldCatalog: true,
+            workflowFile: fullOutputFile);
         if (compileValidation.HasErrors)
         {
             var feedback = compileValidation.ToFeedback("ao", "workflow-phase-merge", fullOutputFile);

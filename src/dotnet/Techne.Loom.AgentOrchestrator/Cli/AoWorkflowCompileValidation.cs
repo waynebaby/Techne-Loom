@@ -188,7 +188,8 @@ internal static class AoWorkflowCompileValidator
         WorkflowInstance instance,
         ContextFieldCatalog? contextFieldCatalog,
         string? catalogLoadError,
-        bool requireContextFieldCatalog)
+        bool requireContextFieldCatalog,
+        string? workflowFile = null)
     {
         ArgumentNullException.ThrowIfNull(instance);
         var result = new AoCompileValidationResult();
@@ -196,6 +197,19 @@ internal static class AoWorkflowCompileValidator
         var transitions = instance.GetTransitionNodes();
 
         RunPhase(result, "structure", [], () => ValidateStructure(instance, states, transitions, result));
+        var fileNameError = CanonicalWorkflowFileStore.GetSkillFileNameError(instance, workflowFile);
+        if (fileNameError is not null)
+        {
+            result.Add(
+                StructuralRule,
+                fileNameError,
+                "ownerSkillSlug/workflowFile",
+                CanonicalWorkflowFileStore.SkillFileNameSuggestedFix,
+                code: CanonicalWorkflowFileStore.SkillFileNameErrorCode,
+                category: "contract",
+                phase: "local_contracts");
+        }
+
         RunPhase(result, "local_contracts", ["structure"], () =>
         {
             ValidatePlanContracts(instance, result);

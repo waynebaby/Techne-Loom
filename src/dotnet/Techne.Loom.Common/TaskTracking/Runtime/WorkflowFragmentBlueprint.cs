@@ -105,6 +105,7 @@ internal sealed class WorkflowFragmentBlueprint
             RuntimeVersion = runtime.Version,
             Status = WorkflowStatus.Drafting,
             TemplateKind = manifest.TemplateKind,
+            OwnerSkillSlug = manifest.OwnerSkillSlug,
             TaskType = manifest.TaskType,
             WorkflowKind = manifest.WorkflowKind,
             CaseId = manifest.CaseId,
@@ -356,7 +357,7 @@ internal sealed class WorkflowFragmentBlueprint
     private sealed record BlueprintManifest(
         string Schema, string InstanceId, string[] States, string[] Transitions, string[] Groups, string[] Gates, string[] Routes,
         string? StartNodeId = null, string? EndNodeId = null, string? TemplateKind = null, string? TaskType = null,
-        string? WorkflowKind = null, string? CaseId = null, string? RunId = null, ContractBinding? ContractBinding = null,
+        string? WorkflowKind = null, string? OwnerSkillSlug = null, string? CaseId = null, string? RunId = null, ContractBinding? ContractBinding = null,
         Dictionary<string, object?>? Context = null, ExpressionBinding? ExpressionBinding = null,
         List<string>? DeclaredUserOwnedFields = null, List<string>? ReservedRuntimeOwnedFields = null);
 

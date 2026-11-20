@@ -1861,6 +1861,143 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliLegacyRun_SkillOwnedInstanceIsRejectedBeforeSessionArtifacts()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var directory = Path.Combine(Path.GetTempPath(), $"ao-owned-run-{Guid.NewGuid():N}");
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"ao-owned-objective-{Guid.NewGuid():N}.md");
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"owner-skill--initial-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        instance.OwnerSkillSlug = "owner-skill";
+        await File.WriteAllTextAsync(objectiveFile, "Do not copy the owned workflow.");
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(instance));
+        var original = await File.ReadAllTextAsync(instanceFile);
+
+        var run = await RunCliAsync(repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --instance-file \"{instanceFile}\" --session-dir \"{directory}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("--workflow-file", run.StdOut);
+        Assert.False(Directory.Exists(directory));
+        Assert.Equal(original, await File.ReadAllTextAsync(instanceFile));
+    }
+
+    [Fact]
+    public async Task CliLegacyPromptReplan_SkillOwnedInstanceDoesNotRegisterPointer()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var sessionDirectory = CreateSessionDirectory();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"ao-owned-replan-objective-{Guid.NewGuid():N}.md");
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"owner-skill--replan-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(objectiveFile, "Prepare a legacy session.");
+        var run = await RunCliAsync(repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var snapshotFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var before = await File.ReadAllTextAsync(snapshotFile);
+        var instance = CreatePromptReplanWorkflowInstance();
+        instance.OwnerSkillSlug = "owner-skill";
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var prompt = await RunCliAsync(repoRoot,
+            $"prompt-replan --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --instance-file \"{instanceFile}\" --tbr-id \"transition.main_tbr\"");
+
+        Assert.Equal(2, prompt.ExitCode);
+        Assert.Contains("--workflow-file", prompt.StdOut);
+        Assert.False(File.Exists(GetRuntimeWorkflowPointerFile(sessionDirectory, sessionId)));
+        Assert.Equal(before, await File.ReadAllTextAsync(snapshotFile));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CliLegacyResume_SkillOwnedSidecarOrPointerPreservesSession(bool ownedSidecar)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var sessionDirectory = CreateSessionDirectory();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"ao-owned-resume-objective-{Guid.NewGuid():N}.md");
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"owner-skill--resume-{Guid.NewGuid():N}.json");
+        var resultFile = Path.Combine(Path.GetTempPath(), $"ao-owned-resume-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(objectiveFile, "Prepare a legacy session.");
+        var run = await RunCliAsync(repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var snapshotFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var sidecarFile = GetRuntimeWorkflowFile(sessionDirectory, sessionId);
+        var pointerFile = GetRuntimeWorkflowPointerFile(sessionDirectory, sessionId);
+        var instance = CreatePromptReplanWorkflowInstance();
+        instance.OwnerSkillSlug = "owner-skill";
+        await File.WriteAllTextAsync(ownedSidecar ? sidecarFile : instanceFile, WorkflowJsonSerializer.Serialize(instance));
+        if (!ownedSidecar)
+        {
+            await File.WriteAllTextAsync(pointerFile, JsonSerializer.Serialize(new { workflow_instance_file = instanceFile }));
+        }
+        await File.WriteAllTextAsync(resultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(snapshotFile),
+            payload = new Dictionary<string, object?> { ["confirmed_scope"] = true },
+        }));
+        var beforeSnapshot = await File.ReadAllTextAsync(snapshotFile);
+        var beforeSidecar = await File.ReadAllTextAsync(sidecarFile);
+        var beforePointer = File.Exists(pointerFile) ? await File.ReadAllTextAsync(pointerFile) : null;
+        var beforeExternal = File.Exists(instanceFile) ? await File.ReadAllTextAsync(instanceFile) : null;
+
+        var resume = await RunCliAsync(repoRoot,
+            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\"");
+
+        Assert.Equal(2, resume.ExitCode);
+        Assert.Contains("--workflow-file", resume.StdOut);
+        Assert.Equal(beforeSnapshot, await File.ReadAllTextAsync(snapshotFile));
+        Assert.Equal(beforeSidecar, await File.ReadAllTextAsync(sidecarFile));
+        Assert.Equal(beforePointer, File.Exists(pointerFile) ? await File.ReadAllTextAsync(pointerFile) : null);
+        Assert.Equal(beforeExternal, File.Exists(instanceFile) ? await File.ReadAllTextAsync(instanceFile) : null);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CliLegacyPromptReplan_ExistingOwnedSidecarOrPointerIsNotOverwritten(bool ownedSidecar)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var sessionDirectory = CreateSessionDirectory();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"ao-existing-owned-objective-{Guid.NewGuid():N}.md");
+        var genericFile = Path.Combine(Path.GetTempPath(), $"ao-generic-replan-{Guid.NewGuid():N}.json");
+        var ownedFile = Path.Combine(Path.GetTempPath(), $"owner-skill--existing-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(objectiveFile, "Prepare a legacy session.");
+        var run = await RunCliAsync(repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var snapshotFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var sidecarFile = GetRuntimeWorkflowFile(sessionDirectory, sessionId);
+        var pointerFile = GetRuntimeWorkflowPointerFile(sessionDirectory, sessionId);
+        await File.WriteAllTextAsync(genericFile, WorkflowJsonSerializer.Serialize(CreatePromptReplanWorkflowInstance()));
+        var instance = CreatePromptReplanWorkflowInstance();
+        instance.OwnerSkillSlug = "owner-skill";
+        await File.WriteAllTextAsync(ownedSidecar ? sidecarFile : ownedFile, WorkflowJsonSerializer.Serialize(instance));
+        if (!ownedSidecar)
+        {
+            await File.WriteAllTextAsync(pointerFile, JsonSerializer.Serialize(new { workflow_instance_file = ownedFile }));
+        }
+        var beforeSnapshot = await File.ReadAllTextAsync(snapshotFile);
+        var beforeSidecar = await File.ReadAllTextAsync(sidecarFile);
+        var beforePointer = File.Exists(pointerFile) ? await File.ReadAllTextAsync(pointerFile) : null;
+        var beforeOwned = File.Exists(ownedFile) ? await File.ReadAllTextAsync(ownedFile) : null;
+
+        var prompt = await RunCliAsync(repoRoot,
+            $"prompt-replan --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --instance-file \"{genericFile}\" --tbr-id \"transition.main_tbr\"");
+
+        Assert.Equal(2, prompt.ExitCode);
+        Assert.Contains("--workflow-file", prompt.StdOut);
+        Assert.Equal(beforeSnapshot, await File.ReadAllTextAsync(snapshotFile));
+        Assert.Equal(beforeSidecar, await File.ReadAllTextAsync(sidecarFile));
+        Assert.Equal(beforePointer, File.Exists(pointerFile) ? await File.ReadAllTextAsync(pointerFile) : null);
+        Assert.Equal(beforeOwned, File.Exists(ownedFile) ? await File.ReadAllTextAsync(ownedFile) : null);
+    }
+
+    [Fact]
     public async Task CliHelp_ListsDirectApphostParameters()
     {
         var repoRoot = FindRepositoryRoot();

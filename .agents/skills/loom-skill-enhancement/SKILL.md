@@ -88,7 +88,7 @@ After each post-execution progress report from `/loom-skill-enhancement` or a sk
 
 ## Stable Assets
 
-- `assets/so-workflow/so-template.json`
+- `assets/so-workflow/loom-skill-enhancement--so-template.json`
 - `assets/so-workflow/so-package-lock.json`
 - `assets/so-workflow/node-to-file-map.md`
 - `assets/so-workflow/governance-notes.md`

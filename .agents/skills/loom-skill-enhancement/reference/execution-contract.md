@@ -34,7 +34,7 @@ Every root `templateKind: so-governed-target-skill` workflow declares `taskType`
 
 ### Self-Bootstrap Assets
 
-- `assets/so-workflow/so-template.json`
+- `assets/so-workflow/loom-skill-enhancement--so-template.json`
 - `assets/so-workflow/so-package-lock.json`
 - `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` (optional local MCP support for later operations; it is not part of package acquisition or guide capture)
 

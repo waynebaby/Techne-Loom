@@ -153,8 +153,8 @@ Package 中的 `workflow-instance-builder.csx.md` 是 Markdown 参考文本，�
 离线 HTML 副本包含已有附件的元数据；下载的 JSON 会保留附件 ID，但不含元数据或字节。离线副本无法下载已有附件，也无法上传新附件。
 
 ```powershell
-.\loom.exe skill resume --workflow-file workflow.json --ask-id <ask-id>
-.\loom.exe skill resume --workflow-file workflow.json --offline-submission-file submission.json
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --ask-id <ask-id>
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --offline-submission-file submission.json
 ```
 
 ## Guide 输出
@@ -179,10 +179,10 @@ Windows 直接运行 `loom.exe --guide`；Unix 运行 `loom --guide`。每个 ap
 .\loom.exe ask result --ask-id <ask-id>
 .\loom.exe ask wait --ask-id <ask-id>
 .\loom.exe skill --schema-demo-output outputs\schema-demo
-.\loom.exe skill compile --workflow-file so-template.json --audit-output outputs\audit
+.\loom.exe skill compile --workflow-file my-skill--so-template.json --audit-output outputs\audit
 .\loom.exe skill mcp generate-config --output-file outputs\mcp.json --format vscode
-.\loom.exe skill resume --workflow-file workflow.json --ask-id <ask-id>
-.\loom.exe skill resume --workflow-file workflow.json --offline-submission-file submission.json
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --ask-id <ask-id>
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --offline-submission-file submission.json
 ```
 
 Unix 使用 `./loom --guide` 查看共享指南，并通过 `./loom skill` 前缀调用 Skill Orchestrator 命令。运行 `./loom skill --help` 可核实精确已安装版本的模块命令范围。

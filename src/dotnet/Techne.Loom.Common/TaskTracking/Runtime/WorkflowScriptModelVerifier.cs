@@ -815,7 +815,7 @@ public static class WorkflowScriptModelVerifier
     {
         var values = new List<string>
         {
-            $"root|template={instance.TemplateKind}|start={instance.StartNodeId}|end={instance.EndNodeId}",
+            $"root|template={instance.TemplateKind}|owner={instance.OwnerSkillSlug}|start={instance.StartNodeId}|end={instance.EndNodeId}",
         };
         foreach (var node in instance.Nodes.Values.OrderBy(static node => node.Id, StringComparer.Ordinal))
         {

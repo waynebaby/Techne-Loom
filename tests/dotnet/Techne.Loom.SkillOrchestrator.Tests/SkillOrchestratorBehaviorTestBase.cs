@@ -981,6 +981,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
         {
             InstanceId = $"governed-valid-{Guid.NewGuid():N}",
             ContractBinding = CreateTestContextContractBinding(),
+            OwnerSkillSlug = "fixture-skill",
             TemplateKind = "so-governed-target-skill",
             TaskType = "skill_enhancement",
             WorkflowKind = "target_skill_enhancement",
@@ -1027,6 +1028,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
     protected static WorkflowInstance CreateAskUserRuntimeOwnedFieldWorkflow()
     {
         var workflow = CreateResumeWorkflow();
+        workflow.OwnerSkillSlug = "fixture-skill";
         workflow.TemplateKind = "so-governed-target-skill";
         workflow.Validation = CreateGovernedValidationContract();
         var ask = Assert.IsType<CommandTransition>(workflow.Nodes["transition.ask"]);

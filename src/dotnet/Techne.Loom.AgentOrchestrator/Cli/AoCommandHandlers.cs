@@ -245,6 +245,17 @@ internal static class AoCommandHandlers
         var artifacts = AoSessionArtifactPaths.ResolveExisting(sessionDirectory, sessionId);
         var snapshot = await new AoWorkflowStore().LoadAsync(artifacts.WorkflowFile).ConfigureAwait(false);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(instanceFile).ConfigureAwait(false));
+        AoWorkflowStore.EnsureSessionCompatible(instance);
+        var sessionStore = new AoWorkflowStore();
+        if (File.Exists(artifacts.RuntimeWorkflowFile))
+        {
+            await sessionStore.LoadRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile).ConfigureAwait(false);
+        }
+        var existingPointer = await Runtime.AoRuntimeService.ReadRuntimeWorkflowPointerAsync(artifacts.RuntimeWorkflowPointerFile).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(existingPointer) && File.Exists(existingPointer))
+        {
+            await sessionStore.LoadRuntimeWorkflowAsync(existingPointer).ConfigureAwait(false);
+        }
         if (!instance.Nodes.TryGetValue(tbrId, out var selectedNode) || selectedNode is not ToBeRefinedTransition selectedTbr)
         {
             throw new InvalidOperationException($"Workflow instance '{Path.GetFullPath(instanceFile)}' does not contain a tbr node with id '{tbrId}'.");
@@ -1083,7 +1094,8 @@ internal static class AoCommandHandlers
                     instance,
                     contextFieldCatalog,
                     contextFieldCatalogLoadError,
-                    requireContextFieldCatalog: true);
+                    requireContextFieldCatalog: true,
+                    workflowFile: workflowFile);
                 var feedback = CreateAoCompileFeedback(workflowFile, workflowHash, validation);
                 var feedbackJson = JsonSerializer.Serialize(feedback, WorkflowJsonSerializer.CreateDefaultOptions());
                 if (feedback.Status == "failed")

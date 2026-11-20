@@ -174,7 +174,8 @@ public static class WorkflowFragmentReader
             ReadDateTimeOffset(root, "lastActivityUtc", "updated_at"),
             contextKeys,
             contextKeysTruncated,
-            currentTransitions);
+            currentTransitions,
+            ReadString(root, "ownerSkillSlug"));
     }
 
     private static JsonNode? Project(

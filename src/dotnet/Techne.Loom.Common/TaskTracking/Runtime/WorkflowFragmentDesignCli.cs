@@ -162,9 +162,14 @@ internal sealed class WorkflowFragmentDesignCli(
         try
         {
             var (workflowJson, catalog) = await design.BuildAsync(scratch.FullName, runtime).ConfigureAwait(false);
+            var prefix = GetCandidatePrefix(workflowJson);
+            if (prefix.Length > 0)
+            {
+                staging = Path.Combine(scratch.FullName, $"{prefix}candidate.staging.json");
+            }
             await File.WriteAllTextAsync(staging, workflowJson).ConfigureAwait(false);
             var auditPath = await compile(staging, auditOutput, catalog).ConfigureAwait(false);
-            var candidate = Path.Combine(scratch.FullName, "candidate.json");
+            var candidate = Path.Combine(scratch.FullName, $"{prefix}candidate.json");
             File.Move(staging, candidate);
             Console.WriteLine(JsonSerializer.Serialize(new
             {
@@ -190,8 +195,9 @@ internal sealed class WorkflowFragmentDesignCli(
     {
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
         var (snapshot, catalog) = await store.ReadForCompositionAsync().ConfigureAwait(false);
-        var path = Path.Combine(store.Root, $"candidate-{snapshot.Generation}-{Guid.NewGuid():N}.json");
-        var staging = path + ".staging";
+        var prefix = GetCandidatePrefix(snapshot.WorkflowJson);
+        var path = Path.Combine(store.Root, $"{prefix}candidate-{snapshot.Generation}-{Guid.NewGuid():N}.json");
+        var staging = prefix.Length == 0 ? path + ".staging" : path[..^".json".Length] + ".staging.json";
         try
         {
             await using (var stream = new FileStream(staging, FileMode.CreateNew, FileAccess.Write, FileShare.None))
@@ -210,6 +216,18 @@ internal sealed class WorkflowFragmentDesignCli(
             File.Delete(staging);
             File.Delete(staging + ".lock");
         }
+    }
+
+    private static string GetCandidatePrefix(string workflowJson)
+    {
+        var workflow = WorkflowJsonSerializer.Deserialize(workflowJson);
+        var error = CanonicalWorkflowFileStore.GetSkillFileNameError(workflow);
+        if (error is not null)
+        {
+            throw new InvalidOperationException(error);
+        }
+
+        return string.IsNullOrWhiteSpace(workflow.OwnerSkillSlug) ? "" : $"{workflow.OwnerSkillSlug}--";
     }
 
     private static string? GetOption(string[] args, string option)
