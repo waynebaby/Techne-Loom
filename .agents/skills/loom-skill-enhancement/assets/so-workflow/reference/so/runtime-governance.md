@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.5.8-beta`
-- source_sha256: `a0f46c60116c433f846b9718ce55fd5cd8ffeb82dc6c97e3a27b9bef702939a3`
-- source_package_sha512: `bK46UVnTQ1zVEZJK0nX2wBi0wxqWfn5HbpzBaaYrQKoRijr7JOyCQA8HQyJBYNID6tT2vDLeZjqQT36TyW2WrQ==`
-- target_bound_version: `0.5.8-beta`
+- source_version: `0.5.9-beta`
+- source_sha256: `511ae7d7f1577e91cd1a1a93aae1d3dad9fcb21c7570803cb3ddc9201e0f8726`
+- source_package_sha512: `UNCJArqeVi56DJvlfAbRBS3VbCPSP+mzmEOn7fxB/fE/+uC1iKcqaDDYmYbMdMgyz27B4oyCL0cv9H04jfNg+Q==`
+- target_bound_version: `0.5.9-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete SO governance page extracted from the exa
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.8-beta
-Build: published package 0.5.8-beta
+Version: 0.5.9-beta
+Build: published package 0.5.9-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -175,10 +176,10 @@ Use the exact runtime to write the current workflow schema contract and a compil
 The command writes the complete set `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs`. The two executable examples are ordinary `.cs` files: pass their paths to `--script-file` and `--verify-script`; no project file or external C# script runtime is required. Use the same runtime to validate the generated demo with `compile --workflow-file <path>`. Keep these generated files outside skill folders unless they are explicitly requested deliverables.
 
 ```guide-template
-.\loom.exe skill compile --workflow-file so-template.json --audit-output outputs/audit
+.\loom.exe skill compile --workflow-file my-skill--so-template.json --audit-output outputs/audit
 ```
 
-`so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
+`my-skill--so-template.json` is the checked-in source template for the `my-skill` owner. Skill-owned templates and execution copies must declare `ownerSkillSlug` matching the owning skill directory and use `<ownerSkillSlug>--<purpose>.json`; this also applies when upgrading older skills. Designers and compile reject incompatible output names. Generic workflows without a skill owner are not subject to this naming rule. Place `outputs/audit` outside the skill folder.
 
 For `/loom-skill-enhancement` and any skill being enhanced under Loom Skill Orchestrator governance, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the current direct apphost path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next apphost `compile`, `run`, or `resume`, then immediately return to the same published apphost path.
 
@@ -195,11 +196,11 @@ For wording discipline, treat guide refresh, checked-in asset authoring, and com
 Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `workflow.html`, and `workflow.json`. Use that analysis artifact to review control-flow structures before execution: branches, switch-like groups, loops, requested inputs, published output families, user seams, runtime seams, and gate coverage.
 
 ```guide-template
-.\loom.exe skill run --workflow-file workflow.current.json --context-file context.json --audit-output outputs/audit
+.\loom.exe skill run --workflow-file my-skill--workflow.current.json --context-file context.json --audit-output outputs/audit
 ```
 ```
 
-`workflow.current.json` is a mutable runtime copy created outside the skill folder. Do not point `--workflow-file` back at `<target-skill-root>/assets/so-workflow/`, and do not place `outputs/audit` there either. Create a fresh runtime copy when starting a new official run chain, then keep resume on that same persisted runtime copy instead of rebuilding it from checked-in source assets.
+`my-skill--workflow.current.json` is a mutable runtime copy created outside the skill folder. Do not point `--workflow-file` back at `<target-skill-root>/assets/so-workflow/`, and do not place `outputs/audit` there either. Create a fresh runtime copy when starting a new official run chain, then keep resume on that same persisted runtime copy and retain its `caseId` and `runId` instead of rebuilding it from checked-in source assets.
 
 ```guide-template
 {
@@ -212,7 +213,7 @@ Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `work
 ```
 
 ```guide-template
-.\loom.exe skill resume --workflow-file workflow.current.json --result-file external-step-result.json
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --result-file external-step-result.json
 ```
 ```
 
@@ -220,7 +221,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 
 ```guide-checklist
 - workflow JSON is materialized before execution
-- checked-in source template stays clean; run/resume target an external mutable workflow copy such as `workflow.current.json`
+- checked-in source template stays clean; run/resume target an external mutable workflow copy such as `my-skill--workflow.current.json`
 - every new official run chain starts from a fresh external workflow execution file copied from checked-in source assets
 - resume stays on the same persisted runtime workflow copy from that run chain
 - direct workflow JSON edits are not a normal governance path; blocked-state emergency workarounds require explicit user approval and immediate return to the direct SO apphost
