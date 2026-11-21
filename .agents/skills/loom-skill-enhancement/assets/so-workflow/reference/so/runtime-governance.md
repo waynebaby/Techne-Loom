@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `beta`
-- source_version: `0.5.9-beta`
-- source_sha256: `511ae7d7f1577e91cd1a1a93aae1d3dad9fcb21c7570803cb3ddc9201e0f8726`
-- source_package_sha512: `UNCJArqeVi56DJvlfAbRBS3VbCPSP+mzmEOn7fxB/fE/+uC1iKcqaDDYmYbMdMgyz27B4oyCL0cv9H04jfNg+Q==`
-- target_bound_version: `0.5.9-beta`
+- source_channel: `released`
+- source_version: `0.5.9`
+- source_sha256: `15167fc261cba083ad96df63b22776b1efbe04d85e0f01c4d49b3857717d75ce`
+- source_package_sha512: `5WGzyFkz7NZT4NsJ8Ov5G3ETG1vNa16cuCPwJNqbvPo/wn331ArwSRyB4Vc5x+1rp0rSXlfyHq/kzhz/eUW6iQ==`
+- target_bound_version: `0.5.9`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete SO governance page extracted from the exa
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.9-beta
-Build: published package 0.5.9-beta
+Version: 0.5.9
+Build: published package 0.5.9
 <!-- guide-version:end -->
+
 
 
 
