@@ -11,7 +11,7 @@ public sealed class PlanExecutionScopeContractTests
     public void ScopePredicate_RejectsMissingEmptyAndWhitespace()
     {
         var root = FindRepositoryRoot();
-        var templatePath = Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "loom-plan-execution--so-template.json");
         var templateJson = File.ReadAllText(templatePath);
         var workflow = WorkflowJsonSerializer.Deserialize(templateJson);
         var scope = Assert.IsType<CommandTransition>(workflow.Nodes["transition.collect_governance_scope"]);

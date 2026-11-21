@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `released`
-- source_version: `0.5.8`
-- source_sha256: `f7c41917b8fc193cb7a2400bc756cfd8879dd95c077c90478fc32ea505082034`
-- source_package_sha512: `iToxwoWiyiPqgzOTsfy9qHKjzfny8ukMkC26imoFrJY+WTNfvrbk4mDz0z0/BxdCzHydZvyapUy+Lx247WtmFw==`
-- target_bound_version: `0.5.8`
+- source_channel: `beta`
+- source_version: `0.5.9-beta`
+- source_sha256: `90a87bb4c38f0c1b32f13d5f32db8526e25ccd2f0c207c0345e7253c82ab78de`
+- source_package_sha512: `UNCJArqeVi56DJvlfAbRBS3VbCPSP+mzmEOn7fxB/fE/+uC1iKcqaDDYmYbMdMgyz27B4oyCL0cv9H04jfNg+Q==`
+- target_bound_version: `0.5.9-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,8 +25,8 @@ This target-local file is the complete AO behavior page extracted from the exact
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.8
-Build: published package 0.5.8
+Version: 0.5.9-beta
+Build: published package 0.5.9-beta
 <!-- guide-version:end -->
 
 

@@ -167,7 +167,7 @@ public sealed class PlanExecutionWorkflowDesignerReviewTests
         }
     };
 
-    private static WorkflowInstance LoadWorkflow() => WorkflowJsonSerializer.Deserialize(File.ReadAllText(Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json")));
+    private static WorkflowInstance LoadWorkflow() => WorkflowJsonSerializer.Deserialize(File.ReadAllText(Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "loom-plan-execution--so-template.json")));
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

@@ -9,14 +9,16 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 
 public sealed class SoWorkflowPhaseCliTests
 {
-    [Fact]
-    public async Task PhaseCompile_WritesParseableStaticOnlyResult()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PhaseCompile_WritesParseableStaticOnlyResult(bool owned)
     {
         var repositoryRoot = FindRepositoryRoot();
         var root = Path.Combine(Path.GetTempPath(), $"loom-so-phase-cli-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
         var contractFile = Path.Combine(root, "contract.json");
-        var workflowFile = Path.Combine(root, "workflow.json");
+        var workflowFile = Path.Combine(root, owned ? "sample-skill--workflow.json" : "workflow.json");
         var skeletonFile = Path.Combine(root, "skeleton.json");
         var fragmentFile = Path.Combine(root, "fragment.json");
         var resultFile = Path.Combine(root, "result.json");
@@ -40,6 +42,7 @@ public sealed class SoWorkflowPhaseCliTests
             var template = new WorkflowInstance
             {
                 InstanceId = "phase-cli",
+                OwnerSkillSlug = owned ? "sample-skill" : null,
                 StartNodeId = "p00_input.start",
                 CurrentNodeId = "p00_input.start",
                 EndNodeId = "p00_input.end",
@@ -118,7 +121,17 @@ public sealed class SoWorkflowPhaseCliTests
             Assert.True(result.StaticOnly);
             Assert.NotNull(result.Fragment);
 
-            var candidateFile = Path.Combine(root, "candidate.json");
+            var candidateFile = Path.Combine(root, owned ? "sample-skill--candidate.json" : "candidate.json");
+            if (owned)
+            {
+                var invalidFile = Path.Combine(root, "candidate.json");
+                var rejectedMerge = await RunCliAsync(
+                    repositoryRoot,
+                    $"merge --workflow-file \"{workflowFile}\" --skeleton-file \"{skeletonFile}\" --result-file \"{resultFile}\" --output-file \"{invalidFile}\"");
+                Assert.NotEqual(0, rejectedMerge.ExitCode);
+                Assert.Contains("must begin with", rejectedMerge.StdOut + rejectedMerge.StdErr, StringComparison.Ordinal);
+                Assert.False(File.Exists(invalidFile));
+            }
             var mergeRun = await RunCliAsync(
                 repositoryRoot,
                 $"merge --workflow-file \"{workflowFile}\" --skeleton-file \"{skeletonFile}\" --result-file \"{resultFile}\" --output-file \"{candidateFile}\"");

@@ -6,6 +6,7 @@ namespace Techne.Loom.Abstractions.TaskTracking.Model;
 public static class WorkflowIdentityContract
 {
     public const string SkillEnhancementTaskType = "skill_enhancement";
+    public const string GovernedSkillTemplateKind = "so-governed-target-skill";
     public const string SoSelfBootstrapWorkflowKind = "so_self_bootstrap";
     public const string TargetSkillEnhancementWorkflowKind = "target_skill_enhancement";
     public const string TargetSkillBusinessWorkflowKind = "target_skill_business";
@@ -33,6 +34,14 @@ public static class WorkflowIdentityContract
 
     public static bool IsKnownWorkflowKind(string? workflowKind)
         => workflowKind is SoSelfBootstrapWorkflowKind or TargetSkillEnhancementWorkflowKind or TargetSkillBusinessWorkflowKind;
+
+    public static bool IsSkillOwnedWorkflow(WorkflowInstance instance)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        return !string.IsNullOrWhiteSpace(instance.OwnerSkillSlug)
+            || string.Equals(instance.TemplateKind, GovernedSkillTemplateKind, StringComparison.Ordinal)
+            || IsKnownWorkflowKind(instance.WorkflowKind);
+    }
 
     public static bool IsEnhancementWorkflowKind(string? workflowKind)
         => workflowKind is SoSelfBootstrapWorkflowKind or TargetSkillEnhancementWorkflowKind;

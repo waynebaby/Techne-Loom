@@ -70,14 +70,14 @@
 NuGet 精确版本 URL：
 
 ```text
-https://api.nuget.org/v3-flatcontainer/<package-id-lowercase>/0.5.8/<package-id-lowercase>.0.5.4.nupkg
+https://api.nuget.org/v3-flatcontainer/<package-id-lowercase>/0.5.8/<package-id-lowercase>.0.5.8.nupkg
 ```
 
 GitHub 精确包及校验文件位于 stable release 下，文件名相同：
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.4.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.4.nupkg.sha512
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.8.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.8.nupkg.sha512
 ```
 
 解压前校验 package id、精确版本、RID、nuspec、`tools/<rid>/runtime.json`、压缩包路径与大小、apphost 和英文 guide 文件。拒绝不匹配或不安全的 ZIP 条目。

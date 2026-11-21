@@ -49,7 +49,8 @@ internal static class AoMcpOperations
                 instance,
                 contextFieldCatalog,
                 contextFieldCatalogLoadError,
-                requireContextFieldCatalog: true).ToFeedback("agent-orchestrator", "dotnet-ao", workflowFile, workflowHash);
+                requireContextFieldCatalog: true,
+                workflowFile: workflowFile).ToFeedback("agent-orchestrator", "dotnet-ao", workflowFile, workflowHash);
         }
         catch (Exception exception) when (exception is JsonException or InvalidOperationException)
         {

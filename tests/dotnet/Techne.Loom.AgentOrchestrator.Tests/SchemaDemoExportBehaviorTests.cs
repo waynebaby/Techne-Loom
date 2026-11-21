@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
@@ -84,7 +85,7 @@ public sealed class SchemaDemoExportBehaviorTests
 
             using var schemaDocument = JsonDocument.Parse(await File.ReadAllTextAsync(schemaFile!));
             Assert.Equal("techne-loom.workflow-instance", schemaDocument.RootElement.GetProperty("schemaId").GetString());
-            Assert.Equal("2", schemaDocument.RootElement.GetProperty("schemaVersion").GetString());
+            Assert.Equal("3", schemaDocument.RootElement.GetProperty("schemaVersion").GetString());
             var allowedStrategies = schemaDocument.RootElement.GetProperty("allowedValues").GetProperty("concurrencyStrategy").EnumerateArray().Select(static item => item.GetString()).ToArray();
             Assert.Equal(new[] { "firstPass", "whenAnyResponse", "whenAnyPass", "whenAllPass", "whenExpression" }, allowedStrategies);
             var groupFields = schemaDocument.RootElement.GetProperty("transitionGroupFields").EnumerateArray().Select(static item => item.GetString()).ToArray();
@@ -136,8 +137,10 @@ public sealed class SchemaDemoExportBehaviorTests
         }
     }
 
-    [Fact]
-    public async Task FragmentDesignUsesAoValidationAndRejectsAnSoBaseline()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FragmentDesignUsesAoValidationAndRejectsAnSoBaseline(bool owned)
     {
         var repo = FindRepositoryRoot();
         var root = Directory.CreateTempSubdirectory("loom-ao-fragment-test-").FullName;
@@ -146,7 +149,13 @@ public sealed class SchemaDemoExportBehaviorTests
         {
             var export = await RunCliAsync(repo, $"--schema-demo-output \"{root}\"");
             Assert.True(export.ExitCode == 0, export.StdOut + export.StdErr);
-            var baseline = Path.Combine(root, "workflow.demo.json");
+            var baseline = Path.Combine(root, owned ? "sample-skill--baseline.json" : "workflow.demo.json");
+            if (owned)
+            {
+                var ownedWorkflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(Path.Combine(root, "workflow.demo.json")));
+                ownedWorkflow.OwnerSkillSlug = "sample-skill";
+                await File.WriteAllTextAsync(baseline, WorkflowJsonSerializer.Serialize(ownedWorkflow));
+            }
             var original = await File.ReadAllTextAsync(baseline);
             var draft = WorkflowJsonSerializer.Deserialize(original);
             var scope = Path.Combine(root, "scope.json");
@@ -178,6 +187,8 @@ public sealed class SchemaDemoExportBehaviorTests
             using var receipt = JsonDocument.Parse(compose.StdOut);
             var candidate = receipt.RootElement.GetProperty("candidate_file").GetString();
             Assert.NotNull(candidate);
+            Assert.StartsWith(owned ? "sample-skill--candidate-" : "candidate-", Path.GetFileName(candidate), StringComparison.Ordinal);
+            Assert.EndsWith(".json", candidate, StringComparison.Ordinal);
             var result = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(candidate));
             Assert.Equal("dotnet-ao", result.RuntimeBinding);
             Assert.Equal("AO fixture edit.", result.Nodes[draft.StartNodeId].Description);
@@ -188,6 +199,94 @@ public sealed class SchemaDemoExportBehaviorTests
             if (session is not null)
             {
                 DeleteDirectory(session);
+            }
+            DeleteDirectory(root);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FragmentBlueprintBuildPreservesOwnedAndGenericNames(bool owned)
+    {
+        var repo = FindRepositoryRoot();
+        var root = Directory.CreateTempSubdirectory("loom-ao-blueprint-name-").FullName;
+        string? candidateDirectory = null;
+        try
+        {
+            var export = await RunCliAsync(repo, $"--schema-demo-output \"{root}\"");
+            Assert.True(export.ExitCode == 0, export.StdOut + export.StdErr);
+            var original = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(root, "workflow.demo.json")))!;
+            if (owned)
+            {
+                original["ownerSkillSlug"] = "sample-skill";
+            }
+            var manifest = new JsonObject
+            {
+                ["schema"] = "loom.workflow-fragment-blueprint.v1",
+                ["instanceId"] = original["instanceId"]!.DeepClone(),
+                ["states"] = new JsonArray(),
+                ["transitions"] = new JsonArray(),
+                ["groups"] = new JsonArray(),
+                ["gates"] = new JsonArray(),
+                ["routes"] = new JsonArray(),
+            };
+            foreach (var key in new[] { "startNodeId", "endNodeId", "templateKind", "ownerSkillSlug", "context", "contractBinding", "expressionBinding" })
+            {
+                manifest[key] = original[key]?.DeepClone();
+            }
+            foreach (var key in new[] { "declaredUserOwnedFields", "reservedRuntimeOwnedFields" })
+            {
+                manifest[key] = original["validation"]![key]?.DeepClone();
+            }
+            var index = 0;
+            async Task AddAsync(string family, JsonNode fragment)
+            {
+                var name = $"fragment-{index++}.json";
+                await File.WriteAllTextAsync(Path.Combine(root, name), fragment.ToJsonString());
+                manifest[family]!.AsArray().Add(name);
+            }
+            foreach (var (id, source) in original["nodes"]!.AsObject())
+            {
+                var fragment = source!.DeepClone();
+                if (fragment["$kind"]!.GetValue<string>() == "state")
+                {
+                    foreach (var group in fragment["groups"]!.AsArray())
+                    {
+                        await AddAsync("groups", new JsonObject { ["stateId"] = id, ["group"] = group!.DeepClone() });
+                    }
+                    fragment["groups"] = new JsonArray();
+                    await AddAsync("states", fragment);
+                }
+                else
+                {
+                    await AddAsync("transitions", fragment);
+                }
+            }
+            foreach (var (id, gate) in original["validation"]!["gates"]!.AsObject())
+            {
+                await AddAsync("gates", new JsonObject { ["id"] = id, ["gate"] = gate!.DeepClone() });
+            }
+            foreach (var (id, route) in original["validation"]!["routes"]!.AsObject())
+            {
+                await AddAsync("routes", new JsonObject { ["id"] = id, ["route"] = route!.DeepClone() });
+            }
+            var design = Path.Combine(root, "design.json");
+            await File.WriteAllTextAsync(design, manifest.ToJsonString());
+            var build = await RunCliAsync(repo, $"fragment-design build --design-file \"{design}\" --audit-output \"{Path.Combine(root, "audit")}\"");
+            Assert.True(build.ExitCode == 0, build.StdOut + build.StdErr);
+            using var receipt = JsonDocument.Parse(build.StdOut);
+            var candidate = receipt.RootElement.GetProperty("candidate_file").GetString();
+            Assert.NotNull(candidate);
+            candidateDirectory = Path.GetDirectoryName(candidate);
+            Assert.Equal(owned ? "sample-skill--candidate.json" : "candidate.json", Path.GetFileName(candidate));
+            Assert.True(JsonNode.DeepEquals(original, JsonNode.Parse(await File.ReadAllTextAsync(candidate))));
+        }
+        finally
+        {
+            if (candidateDirectory is not null)
+            {
+                DeleteDirectory(candidateDirectory);
             }
             DeleteDirectory(root);
         }

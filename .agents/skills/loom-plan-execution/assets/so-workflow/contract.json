@@ -930,6 +930,24 @@
         "description": "Relative path to the exact checked-in workflow designer entrypoint confirmed by its reviewer.",
         "suggested_values": [],
         "suggestion_reason": "Must match the versioned reviewer summary and identify a readable source file."
+      },
+      {
+        "path": "plan.requested_business_outcome",
+        "type": "string",
+        "nullable": false,
+        "owner": "caller",
+        "description": "Caller-owned source declared by the LPE business contract as the verifiable business deliverables/primary completion contract.",
+        "suggested_values": [],
+        "suggestion_reason": "The caller supplies the requested business outcome; no value is inferred."
+      },
+      {
+        "path": "terminal_business_objective",
+        "type": "string",
+        "nullable": false,
+        "owner": "caller",
+        "description": "Exact caller-owned alias of plan.requested_business_outcome, explicitly confirmed by the user. Source path: plan.requested_business_outcome; do not substitute plan.objective.",
+        "suggested_values": [],
+        "suggestion_reason": "The caller supplies this value through plan.requested_business_outcome; no alternate source is inferred."
       }
     ]
   },

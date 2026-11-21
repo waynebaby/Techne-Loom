@@ -201,11 +201,11 @@ public sealed class WorkflowDesignerContractBehaviorTests
         var templates = new[]
         {
             (
-                Path: Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json"),
+                Path: Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "loom-plan-execution--so-template.json"),
                 TransitionId: "transition.collect_governance_scope"
             ),
             (
-                Path: Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json"),
+                Path: Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "loom-skill-enhancement--so-template.json"),
                 TransitionId: "transition.request_review"
             ),
         };
@@ -457,7 +457,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
                 }
             }
         };
-        var path = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        var path = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(path));
         var transition = Assert.IsType<CommandTransition>(workflow.Nodes["transition.aggregate_post_fix_validation"]);
         var evaluator = new CSharpExpressionEvaluator(workflow.ExpressionBinding);
@@ -516,7 +516,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
     public void PlanExecutionTemplate_UsesCanonicalStructuredTransitionFields()
     {
         var root = FindRepositoryRoot();
-        var templatePath = Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "loom-plan-execution--so-template.json");
         using var document = JsonDocument.Parse(File.ReadAllText(templatePath));
         var transitions = document.RootElement.GetProperty("nodes")
             .EnumerateObject()
@@ -567,7 +567,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
     public void SoDraftTemplate_EvidencePredicateFailsClosedForWrongVersionOrUnknownProbe()
     {
         var root = FindRepositoryRoot();
-        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(templatePath));
         var draft = Assert.IsType<CommandTransition>(workflow.Nodes["transition.draft_template"]);
         var evaluator = new CSharpExpressionEvaluator(workflow.ExpressionBinding);
@@ -620,7 +620,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
     public void SharedReviewContextGate_DoesNotRequireSupportHash()
     {
         var root = FindRepositoryRoot();
-        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var templateJson = File.ReadAllText(templatePath);
         var workflow = WorkflowJsonSerializer.Deserialize(templateJson);
         var gate = workflow.Validation?.Gates.GetValueOrDefault("gate.bootstrap_shared_context")
@@ -644,7 +644,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
     {
         return new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["workflow_template_json"] = "assets/so-workflow/so-template.json",
+            ["workflow_template_json"] = "assets/so-workflow/loom-skill-enhancement--so-template.json",
             ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
             ["gate_failure_guidance_review"] = new Dictionary<string, object?>(),
             ["workflow_design_evidence"] = new Dictionary<string, object?>(),
@@ -716,7 +716,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
 
             Path.Combine(".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "contract.json"),
 
-            Path.Combine(".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json")
+            Path.Combine(".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "loom-skill-enhancement--so-template.json")
 
         })
 
@@ -805,7 +805,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
     public void SoDraftTemplate_ExposesEvidenceDescriptorsAndFailClosedPredicates()
     {
         var root = FindRepositoryRoot();
-        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(templatePath));
         var draft = Assert.IsType<CommandTransition>(workflow.Nodes["transition.draft_template"]);
         var parameters = Assert.IsAssignableFrom<IDictionary<string, object?>>(draft.Command.Parameters);
@@ -881,7 +881,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
     public void SoDraftTemplate_DataflowSeparatesPayloadRequirementsFromProducedContext()
     {
         var root = FindRepositoryRoot();
-        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(templatePath));
         var report = new SkillWorkflowDataflowAnalyzer().Analyze(workflow);
         var transition = Assert.Single(report.Transitions, item => item.TransitionId == "transition.draft_template");

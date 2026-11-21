@@ -3,8 +3,8 @@
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-contracts.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.5.8
-构建：已发布的 0.5.8 包
+版本：0.5.9-beta
+构建：已发布的 0.5.9-beta 包
 <!-- guide-version:end -->
 
 
@@ -87,7 +87,7 @@ Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排�
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
 - 每次 `loom agent run` 或 `resume` 都会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。每次 Agent 路由调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md)：校验返回路径，按顺序输出 Mermaid、HTML、Analysis 和 Dataflow；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。
 - `--workspace-root <directory>` 可选地把已验证的 Mermaid、HTML，以及生成时才有的 Analysis 和 Dataflow 镜像到新的、被忽略的 workspace `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录可用的 `workspace_relative_*_file` 路径、各 artifact 的 SHA-256、`status`（`workspace_mirror` 或 `runtime_path_only`）、`mirror_error`、生成/链接字段、preview/card 状态和失败详情。镜像失败时保留原 runtime 路径，且不宣称 workspace 链接可用。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
-- `run` 现在还可通过 `--instance-file` 接受一份外部编写的 `WorkflowInstance`，让第一次 runtime blocked step 的审计沿用 compile/prompt-plan 已验证的同一份图
+- 旧版 session `run --instance-file` 可接受外部编写的普通 `WorkflowInstance` 以生成首次审计；由于 session 命令会创建另一份副本，属于 skill 的 workflow 会被拒绝。兼容副本请使用 canonical `--workflow-file` 路由。已有 legacy session 应予保留，此保护不会自动迁移或重放。
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
 
 通过 Loom 执行文件 patch 时，使用统一的 `loom agent --patch` 路由，并提供完整的外部 patch 内容文件；否则使用仓库批准的文件编辑方式。

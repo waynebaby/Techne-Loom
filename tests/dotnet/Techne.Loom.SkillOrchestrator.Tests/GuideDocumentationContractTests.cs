@@ -224,7 +224,7 @@ public sealed class GuideDocumentationContractTests
         var runtimePolicy = Read(".github/instructions/loom-runtime.instructions.md");
         var enhancementSkill = Read(".agents/skills/loom-skill-enhancement/SKILL.md");
         var enhancementExecution = Read(".agents/skills/loom-skill-enhancement/reference/execution-contract.md");
-        var enhancementTemplateText = Read(".agents/skills/loom-skill-enhancement/assets/so-workflow/so-template.json");
+        var enhancementTemplateText = Read(".agents/skills/loom-skill-enhancement/assets/so-workflow/loom-skill-enhancement--so-template.json");
         Assert.Contains("After any failed request, do not automatically switch transports to repeat the same artifact/source.", askRuntime, StringComparison.Ordinal);
         Assert.Contains("A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted", askRuntime, StringComparison.Ordinal);
         Assert.Contains("A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted", runtimePolicy, StringComparison.Ordinal);
@@ -268,7 +268,7 @@ public sealed class GuideDocumentationContractTests
     {
         var repositoryRoot = FindRepositoryRoot();
         var skillRoot = Path.Combine(repositoryRoot, ".agents", "skills", "loom-skill-enhancement");
-        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "loom-skill-enhancement--so-template.json");
         using var template = System.Text.Json.JsonDocument.Parse(File.ReadAllText(templatePath));
         var gates = template.RootElement.GetProperty("validation").GetProperty("gates");
         var referenceCount = 0;

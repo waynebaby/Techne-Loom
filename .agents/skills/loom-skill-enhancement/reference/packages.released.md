@@ -36,7 +36,3 @@ Use the same extracted apphost for schema/demo, compile, run, and resume. No ins
 Install the version-matched SDK independently of runtime RID selection:
 `dotnet add package Techne.Loom.Abstractions --version 0.5.8`
 <!-- abstractions-sdk-version:end -->
-
-
-
-

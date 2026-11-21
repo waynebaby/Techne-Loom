@@ -18,7 +18,7 @@ Upgrade AO skill governance assets so workflow-authoring quality is deterministi
 
 1. Analyze AO `SKILL.md` governance wording.
 2. Analyze AO workflow-designer transition/gate contract quality.
-3. Refresh `so-template.json` with explicit validation gates, seams, and route evidence.
+3. Refresh `loom-plan-execution--so-template.json` with explicit validation gates, seams, and route evidence.
 4. Compile template and collect Mermaid, HTML, and workflow analysis artifacts.
 5. Review findings and apply revisions until compile-review approval is reached.
 

@@ -50,7 +50,7 @@ public sealed class SoRuntimePolicyBehaviorTests
         var skillRoot = Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement");
         var workflowRoot = Path.Combine(skillRoot, "assets", "so-workflow");
         var skillText = File.ReadAllText(Path.Combine(skillRoot, "SKILL.md"));
-        var templatePath = Path.Combine(workflowRoot, "so-template.json");
+        var templatePath = Path.Combine(workflowRoot, "loom-skill-enhancement--so-template.json");
         var templateText = File.ReadAllText(templatePath);
         using var workflowDocument = JsonDocument.Parse(templateText);
         var nodes = workflowDocument.RootElement.GetProperty("nodes");

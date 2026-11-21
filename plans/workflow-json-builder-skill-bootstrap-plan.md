@@ -1,8 +1,8 @@
 # Loom Flow Weaver（loom-flow-weaver）：自举与治理计划
 
-> **状态：Proposal / Review only（提案，仅供审阅）**
-> 供用户 review，明确未来范围、治理边界、父子 SO 交接协议和验收证据；不授权 skill/workflow 实施。计划文件本身可按用户指示提交并推送。
-> **本次边界：** 完成并更新本计划，预告根 README 中的 Loom Flow Weaver Coming Next 项，并同步发布工作流中的 README 生成文本和双语 workflow glossary。此处只做计划/文档说明，不实施 skill、agent、workflow template 或运行时代码，不运行 SO、build 或 test。
+> **状态：执行中（用户已授权）**
+> 用户已明确要求继续实现计划，完成适用验证并提交、推送到 `origin/development`；不包含 `main` promotion。计划作为执行基线，runner、child-adapter 等硬门仍须按证据 fail closed。
+> **新增执行门：** 所有 skill-owned workflow template 与首次生成的执行副本使用 `<skill-slug>--<purpose>.json`，由运行时、设计器和旧 skill 更新流程强制迁移。另将 LSE 自举资产根、预检证据类型/所有权、runtime 版本和运行时投影问题列为 caller 集成前独立硬门；文件名前缀只能缓解同名冲突和归属误判，不能替代这些修复。
 
 ## 1. 摘要
 
@@ -38,7 +38,7 @@ parent/child 仅指单次调用的控制流：caller 与 builder 是两个独立
 - **strand：** 可独立恢复的一次执行实例；避免用 thread 表示执行实例。
 - **seam：** 用户、caller、child 与 runtime 的责任交接位置。
 - **boundary：** 保留协议边界含义。
-- **source template / runtime copy：** checked-in 不可变模板 / 一次 run-resume 使用的外置可变 workflow copy。
+- **source template / runtime copy：** checked-in 不可变模板 / 一次 run-resume 使用的外置可变 workflow copy；二者文件名均以精确 owner skill slug 和 `--` 前缀开头，执行中的 copy 在所有 resume 中保持同一身份与路径。
 - **audit root：** 单一 SO execution strand 独占写入的审计根目录。
 
 ~~~mermaid
@@ -228,18 +228,20 @@ Envelope 区分 business artifact 与 governance evidence。blocked 时返回 st
 
 ## 11. 阶段计划与 review checkpoints
 
-未来每阶段需记录 input、动作、output、authority、gate、失败回退和 audit evidence。review cadence 属未来实施要求，不是本轮授权。
+每阶段都记录 input、动作、output、authority、gate、失败回退和 audit evidence；用户已授权实施，review/fix/validate/commit cadence 是当前执行约束。
 
 | Slice | 工作/输出 | authority 与 gate | 证据、回退与 review |
 |---|---|---|---|
 | 0. 计划/范围批准 | 确认名称、首发 caller、协议 owner；必要时先同步双语 AGENTS | 协议不清不 scaffold | 决策记录；review/fix/validate/commit 后再推进 |
+| 0a. Skill-prefixed workflow file identity | workflow template 和首次执行副本命名为 `<skill-slug>--<purpose>.json`；`ownerSkillSlug` 与实际 skill 目录名一致；更新设计器、运行时、旧 skill 迁移约束 | compile/load/materializer 拒绝缺失或不匹配的 owner 与文件名前缀；resume 继续使用原 copy，不因命名重建实例 | positive/negative filename tests、模板与引用迁移、同一 copy 的 run/resume 证据；review/fix/validate/commit |
 | 1. Package probe/contract | 选 channel、published runtime、fresh guide、探交接能力、冻结 envelope/schema | SO package authority；fresh guide/关键能力失败则停 | manifest、guide、探针、audit；protocol review/commit |
 | 2. 最小 seed | author 最小 I/O 能力并标记 no-governance | 外层治理负责；seed 不自称治理 | seed I/O snapshots；slice review/commit |
 | 3. Self-host template candidate | 现有 workflow designer 可协助 seed 产候选 JSON；独立 reviewer 把关；保留 diff/决策/route-gate-seam map | 候选非执行 authority；约束丢失、泛节点、ownership 错则回退 | fragments、mapping、独立 review；template/schema 即时 review/commit |
 | 4. Independent review/fix | 查 template、routes/gates、blocked、done、AskUser ownership | protocol unresolved 不得通过 | findings/resolutions、Mermaid/HTML/JSON；review/fix/validate/commit |
 | 5. Published SO 验证 | fresh guide 后 compile；外置 copy 验成功/blocked/resume/path collision | 未证明任一路径或治理-only done 可达则返工 | per-step audit/events/backups；runtime/protocol slice 即时 review/commit |
 | 6. Formal governance | 固化 skill/template/package lock/references/mapping | lock/channel/version 不一致不得正式化 | completion packet；review/fix/validate/commit |
-| 7. LSE integration | 加 caller I/O、恢复、失败合同 | 不破 fresh-guide、不混 authority | 双方 audit links；review/fix/validate/commit |
+| 6a. LSE self-bootstrap remediation gate（ledger 第 12 项） | 分离 LSE 自有资产根与 skill-being-enhanced 根；保留 runtime-owned `runtime_preflight_result` 对象，单独定义 LSE ready/blocked 状态及其 producer；使模板版本与精确 package lock 一致；审计 post-fix producer/projection | 不允许借文件名前缀代替根路径隔离；不以目标根或工作目录隐式回退；所有类型/owner/bindings 必须有实际 producer 证据；CDD producer 修复不属 Loom 范围 | 目标目录缺少 LSE references、LSE 根含有它们的隔离场景；精确锁定 apphost compile 与同一外部 copy 的运行/恢复证据；审查与修复记录 |
+| 7. LSE integration | 仅在 formal governance 与第 12 项 hardening gate 通过后增加 caller I/O、恢复、失败合同 | 不破 fresh-guide、不混 authority | 双方 audit links；review/fix/validate/commit |
 | 8. AO Planner integration | 定义 AO 调用与交接 | AO authority 独立 | AO/child evidence refs；review/fix/validate/commit |
 | 9. Final documentation completion, consistency review, and release handoff | **这是计划的最后执行阶段。只有所有实现、两位 caller 集成、验证与各实现 slice review 完成后，才开始统一补充/修订文档。** 盘点本 skill 造成的全部文档新增/修改；补齐公开合同、用户指南、示例、caller 文档、skill-local 说明、导航与 release-facing 内容；对照模板、实际 I/O、runtime authority 与实现证据逐条核对，统一来源、术语与中英文；解决和现有 AO/SO、skill、runtime 文档的重复、冲突或过时内容；最后复核 README 生成源与生成结果 | 文档 inventory 覆盖所有变更文件；公开文档双语互链；skill-local references 仅英文；不得存在与实现/guide 或既有产品边界相冲突的说明；release-facing claims 与已完成实现一致。该 review 是全计划最终完成门 | 文档变更清单、双语配对核验、cross-reference/claim/terminology conflict review、README generator consistency、修复记录；只有所有不一致解决后才可完成 |
 
@@ -253,6 +255,8 @@ Envelope 区分 business artifact 与 governance evidence。blocked 时返回 st
 | 双路线 | 空白与既有 JSON 正确分流，信息保留/改动可见 | 两路样例与 diff |
 | 增量质量 | fragments 可审阅；有 path diff/constraints/待决项；node 责任小 | snapshots、node map |
 | SO contract | root kind/validation 完整；compile/load 查业务 gates、ownership、blocked、done | template、compile report、独立 review |
+| Workflow file identity | skill template 与执行副本均有准确 skill slug 前缀；owner 与路径一致；active resume 不换 copy | positive/negative compile/load、clone/materializer、run/resume tests |
+| LSE self-bootstrap boundary | LSE 自有参考资料与目标 skill 文件各从其明确根读取；runtime evidence 和 LSE 状态使用不同类型/owner；版本与 lock 一致；运行时 producer/projection 验证通过 | target root 缺少 LSE refs 的回归场景、同版 runtime compile/run/resume、字段流证据；CDD 不在此验收范围 |
 | AskUser ownership | 只问 user-owned；runtime facts/path 由 runtime 给 | ownership matrix、payload review |
 | Runtime authority | published runtime runnable，由同 runtime fresh guide，后续 compile/run/resume 在其 authority 下 | manifest、guide、lock、execution evidence |
 | Parent/child | copies/sessions/events/audits 隔离；交接关联；blocked/resume 恢复正确；重复结果不覆盖 | 双侧 audit/event/handoff/resume records |
@@ -271,6 +275,9 @@ Envelope 区分 business artifact 与 governance evidence。blocked 时返回 st
 | 混淆设计与执行 authority | 未验证 template 被正式使用 | 明确状态转换；fresh guide 后由 package runtime 接管 |
 | audit 交叉写入 | 覆盖或责任不清 | 独立 roots、只读 cross-links、冲突失败、owner metadata |
 | 首发范围过宽 | 两 caller 控制语义同时变化 | 澄清范围，分别集成验收 |
+| LSE 与目标 skill 共用 asset root | LSE 自有 reference 在目标目录缺失，或读取错误文件 | 明确两套 root 并分别做边界检查；禁止隐式回退 |
+| Runtime evidence 与 LSE status 混型 | 字符串/对象、owner 与 gate 不一致，compile 或 run/resume 失败 | runtime-owned evidence 保持对象；LSE 自有决策状态独立命名并由可核实 producer 产生 |
+| 模板版本漂移 | template runtimeVersion 与 package lock 不一致，形成错误兼容声明 | 从当前分支精确 package lock 派生版本，compile 时检查一致性 |
 | 增量合并丢字段 | JSON 失效 | baseline、约束清单、path diff、局部验证与最终 compile |
 | 公开 surface 缺 child/resume | 协议不可执行 | fresh-guide/探针前置；单独规划 runtime 能力或 adapter |
 | audit 泄露/膨胀 | 敏感内容持久化/资源增长 | 临时 root；保留到 review/交付完成；不把完整输入或代码副本长期写入仓库；保留必需 per-step records |
@@ -320,18 +327,21 @@ Envelope 区分 business artifact 与 governance evidence。blocked 时返回 st
 11. **冻结与测试：** 每段通过 Roslyn 验证后成为候选冻结资产；全部集成测试通过后冻结并导出完整资产集，再产出目标业务 workflow。测试包括语法/编译检查、片段运行测试、最终组合测试；缺少业务测试标准时先 AskUser。
 12. **业务 workflow 与治理 template：** 代码转换 route 交付目标业务 workflow；self-hosting route 单独交付新 skill 自己的 SO governance template。
 13. **两位 caller 的顺序：** 先 /loom-skill-enhancement，再 AO Planner；分开 review/验收。
-14. **计划交付：** Clarification Loop 完成且计划确认无误后，将本计划文件提交到 development branch 并同步到远程；此授权不包含 skill/workflow 实施。
+14. **实施与交付授权：** 用户已明确授权继续实现计划、完成适用测试并提交/推送到 development 远端；这不包含推送或 promotion 到 `main`。
+15. **Skill-owned workflow 命名：** 模板与执行副本均以前置 `<skill-slug>--` 命名；运行时、设计器及更新旧 skill 的流程强制执行；resume 继续使用同一 copy。
+16. **LSE 诊断范围：** 将报告指出的 LSE 资产根隔离、runtime evidence 与 LSE 状态字段分离、精确版本一致性和实际 producer/projection 验证作为独立 caller 集成前硬门；CDD 目标项目重复 producer 不修改、不纳入 Loom 验收。
+17. **Runner/adapter 合同设计授权：** 先检索 Loom 本地权威合同和实现；若没有，用户授权在本仓库定义并实现版本化 C# fragment runner 与 external child-adapter 合同，明确输入/结果/审计/超时/失败、关联/重复与迟到结果、同一 workflow copy 的恢复语义；实现和验证完成前不得宣称已有支持。
 
 ### 尚需确认或留待实施阶段验证
 
-- **Roslyn runner 合同：** 用户已确认执行模型；正式实施前需从对应权威 skill/runtime 找到 EXE 参数、测试输入、结果/审计字段和失败语义。已读 AO/SO designer agent 与本地 references 覆盖 workflow JSON 设计/governance，不含 runner 调用细节。
-- **Adapter 能力证据：** 实施时须从所选 published guide/runtime 验证启动、status、child resume、结果回传；这是硬 gate，不是用户偏好问题。
+- **Roslyn runner 合同：** 已查看 `WorkflowScriptHost` 与公开指南；当前仅证明 Workflow Build/Edit/Verify，不证明任意 C# 片段 runner。用户授权先检索 Loom 本地来源，若无权威既有实现则在本仓库定义并实现版本化合同，明确 apphost 入口、类型化输入/结果、测试与审计字段、执行安全边界、超时和失败语义。
+- **External child-adapter 合同：** 用户授权先检索 Loom 本地来源，若无则在本仓库定义并实现版本化合同。必须覆盖 start/status/inspect/resume/result、关联与运行时拥有的字段、重复/迟到结果、审计引用及同一外部 workflow copy 的 `caseId`/`runId` 恢复不变量；先合成隔离测试，再验证公开运行路径。
 
-Clarification 进度：Clarification Loop 已完成。最终确认轮接受当前计划和审计保留策略；剩余 Roslyn runner 命令、adapter 能力与实际 runtime evidence 均属于实施阶段的硬验证门，不是未决用户偏好。用户要求将计划与本次 README/发布生成源/glossary 更新一并完成、提交到 development branch 并同步远程；当前仍不实施 skill/workflow。计划最终执行阶段还必须补全全部文档并完成 cross-document consistency review。
+实施状态：Clarification Loop 已完成；用户已授权实现、验证并交付到 `development`，且本轮明确授权在 Loom 本地没有权威 runner/adapter 合同时自行定义并实现版本化合同。请求账本已从 12 项重新基线为固定 17 项；当前新授权解除的是既有 Flow Weaver 硬门，不增加任务项或改变分母。runner、adapter、正式 SO authority 仍须实际实现、验证并发布后才能宣称支持；LSE 的 asset-root、field type/owner、版本和运行时投影仍是 caller 集成前硬门。计划最后的双语文档与一致性 review 仍是最终阶段。
 
 ## 附录：本轮边界
 
-- 已创建并更新：本计划，Proposal / Review only；README Coming Next、两个发布工作流生成源、双语 workflow glossary 已添加 Loom Flow Weaver 预告/术语。
-- 未改：任何 skill、agent、workflow template、runtime code、AGENTS 或现有无关未跟踪文件。
-- 未执行：SO guide/compile/run/resume、build、test、安装、部署。
-- 下一步按用户授权 review、提交并推送本计划及上述文档更新；不实施 skill/workflow。
+- 已完成：四个 Loom Flow Weaver seed 文档已接入 development 工作树；仍不宣称正式 SO authority、任意 C# fragment runner 或 child adapter 已可用。
+- 当前阶段：skill-owner 前缀执行规则与 LPE 模板迁移已写回；LPE caller-owned 字段目录已对齐。定向测试 60/60 通过，精确已发布 0.5.8-beta LPE compile 为 0 errors/0 warnings/0 diagnostics，Windows 与 WSL Release 全量测试各 933/933 通过；独立 review 和本阶段 commit/push 仍待完成。
+- 新增任务 12：LSE 自举根路径、预检证据类型/所有权、精确版本和 post-fix producer/projection 的验证与修复；不得把 CDD 目标工作流未执行或 producer 审计问题说成已完成。
+- 后续：按阶段 review、提交并推送 development，等待对应 Actions 成功后继续 LSE hardening、已获授权的 runner/adapter 合同实现、Flow Weaver formalization 与 caller integrations，再完成最终双语文档 review；不推送 main.

@@ -380,10 +380,10 @@ flowchart TD
 ```bash
 ./loom --guide
 ./loom skill --schema-demo-output outputs/schema-demo
-./loom skill compile --workflow-file so-template.json --audit-output outputs/compile-audit
-./loom skill run --workflow-file workflow-instance.json --context-file context.json --operation-id run-001 --audit-output outputs/run-audit
-./loom skill resume --workflow-file workflow-instance.json --result-file resume.json --operation-id resume-001 --audit-output outputs/run-audit
-./loom skill status --workflow-file workflow-instance.json
+./loom skill compile --workflow-file my-skill--so-template.json --audit-output outputs/compile-audit
+./loom skill run --workflow-file my-skill--workflow.current.json --context-file context.json --operation-id run-001 --audit-output outputs/run-audit
+./loom skill resume --workflow-file my-skill--workflow.current.json --result-file resume.json --operation-id resume-001 --audit-output outputs/run-audit
+./loom skill status --workflow-file my-skill--workflow.current.json
 ```
 
 读取 `--guide` 返回的 `guide_path`，根据匹配的 schema/demo 编写真实模板，再执行 compile。随后在同一个外部 Workflow 实例上 run/resume。若执行暂停在外部交接点，先完成所请求的工作，并提供结构化结果文件，再恢复流程。每个 `*-file` 参数指向的输入文件都必须在命令启动前完整写到磁盘。Compile 校验合同，不证明领域质量或最终任务已经完成。

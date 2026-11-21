@@ -488,7 +488,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             throw new InvalidOperationException($"Workflow script output runtimeVersion '{instance.RuntimeVersion}' does not match the selected runtime version '{input.RuntimeVersion}'.");
         }
 
-        (await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance).ConfigureAwait(false)).ThrowIfInvalid();
+        (await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance, workflowFile: outputFile).ConfigureAwait(false)).ThrowIfInvalid();
 
         WorkflowScriptVerificationResult? verification = null;
         if (!string.IsNullOrWhiteSpace(verifyScript))
@@ -603,6 +603,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var contextDelta = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        CanonicalWorkflowFileStore.EnsureSkillFileName(instance, workflowFile);
         AskScopedSubmissionWorkflow.ValidateBoundaryHints(instance);
         var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
         contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? workflowFile);
@@ -710,8 +711,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         }
 
         var validation = catalog is null
-            ? await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance).ConfigureAwait(false)
-            : WorkflowValidator.ValidateWithContextFieldCatalog(instance, catalog);
+            ? await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance, workflowFile: workflowFile).ConfigureAwait(false)
+            : WorkflowValidator.ValidateWithContextFieldCatalog(instance, catalog, workflowFile);
         var compileFeedback = CreateWorkflowCompileFeedback(workflowFile, workflowHash, validation);
         var compileFeedbackJson = JsonSerializer.Serialize(compileFeedback, WorkflowJsonSerializer.CreateDefaultOptions(indented: true));
         var formattedWorkflowJson = WorkflowJsonSerializer.FormatForFileOutput(workflowJson);
@@ -936,6 +937,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
 
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        CanonicalWorkflowFileStore.EnsureSkillFileName(instance, workflowFile);
         AskScopedSubmissionWorkflow.ValidateBoundaryHints(instance);
         var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
         contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? workflowFile);
@@ -1088,6 +1090,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         XmlFragmentWriter writer)
     {
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        CanonicalWorkflowFileStore.EnsureSkillFileName(instance, workflowFile);
         var endpoints = await AskScopedSubmissionWorkflow.StartWorkersForActiveWaitsAsync(instance, existingWaitIds).ConfigureAwait(false);
         if (endpoints.Count == 0)
         {
@@ -1252,6 +1255,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static async Task MaterializeRuntimeIdentityIfNeededAsync(string workflowFile)
     {
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        CanonicalWorkflowFileStore.EnsureSkillFileName(instance, workflowFile);
         if (instance.Status != WorkflowStatus.ReadyToStart
             || !WorkflowIdentityContract.IsTemplateRunId(instance.RunId))
         {
@@ -1265,7 +1269,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static async Task<(DefaultWorkflowTaskTrackingService Service, string InstanceId)> LoadSessionAsync(string workflowFile, XmlFragmentWriter writer)
     {
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
-        (await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance).ConfigureAwait(false)).ThrowIfInvalid();
+        CanonicalWorkflowFileStore.EnsureSkillFileName(instance, workflowFile);
+        (await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance, workflowFile: workflowFile).ConfigureAwait(false)).ThrowIfInvalid();
         var service = await CreateServiceForVisualizationAsync(instance, writer).ConfigureAwait(false);
         return (service, instance.InstanceId);
     }

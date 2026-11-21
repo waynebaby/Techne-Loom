@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `released`
-- source_version: `0.5.8`
-- source_sha256: `9022a2e42d21d293b3a625196354beee096cade6c741e96151c395bd27d0ecff`
-- source_package_sha512: `iToxwoWiyiPqgzOTsfy9qHKjzfny8ukMkC26imoFrJY+WTNfvrbk4mDz0z0/BxdCzHydZvyapUy+Lx247WtmFw==`
-- target_bound_version: `0.5.8`
+- source_channel: `beta`
+- source_version: `0.5.9-beta`
+- source_sha256: `67e9dc4a4d5ebcd3a6823bb8d092bc2902c726098814268bf32880adaa2caca0`
+- source_package_sha512: `UNCJArqeVi56DJvlfAbRBS3VbCPSP+mzmEOn7fxB/fE/+uC1iKcqaDDYmYbMdMgyz27B4oyCL0cv9H04jfNg+Q==`
+- target_bound_version: `0.5.9-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,8 +25,8 @@ This target-local file is the complete Agent-module contracts page extracted fro
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.8
-Build: published package 0.5.8
+Version: 0.5.9-beta
+Build: published package 0.5.9-beta
 <!-- guide-version:end -->
 
 
@@ -107,7 +107,7 @@ Current implementation status:
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
 - Each `loom agent run` or `resume` emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. Follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md) after every Agent route call: verify the returned paths, emit Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-path pairs in order, each link immediately followed by a fenced text block repeating the same complete absolute address, then print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each followed by one short reason or progress sentence.
 - `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML, plus Analysis and Dataflow when generated, into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records available `workspace_relative_*_file` paths and per-artifact SHA-256 values, `status` (`workspace_mirror` or `runtime_path_only`), `mirror_error`, generation/link fields, preview/card state, and failure details. A mirror failure retains native runtime paths and does not claim workspace links. `must_show_to_user_files` remains an audit list rather than a link guarantee.
-- `run` can optionally accept an authored `WorkflowInstance` through `--instance-file` so the first runtime blocked step audits the same graph that compile/prompt-plan validated
+- Legacy session `run --instance-file` accepts an authored generic `WorkflowInstance` for its first audit; skill-owned workflows are rejected because session commands create a separate copy. Use the canonical `--workflow-file` route for compatible copies. Preserve existing legacy sessions; this guard does not migrate or replay them.
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 
 For a Loom-mediated file patch, use the unified `loom agent --patch` route with a complete external patch-content file; otherwise use the repository-approved editing mechanism.

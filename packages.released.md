@@ -70,14 +70,14 @@ Detect one supported RID from the host OS, architecture, and Linux libc, then ac
 NuGet exact package URL:
 
 ```text
-https://api.nuget.org/v3-flatcontainer/<package-id-lowercase>/0.5.8/<package-id-lowercase>.0.5.4.nupkg
+https://api.nuget.org/v3-flatcontainer/<package-id-lowercase>/0.5.8/<package-id-lowercase>.0.5.8.nupkg
 ```
 
 GitHub exact package and checksum use the same filename under the stable release:
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.4.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.4.nupkg.sha512
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.8.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.8.nupkg.sha512
 ```
 
 Before extraction, verify package identity, exact version, RID, nuspec, `tools/<rid>/runtime.json`, archive paths and sizes, apphost, and English guide files. Reject mismatches and unsafe ZIP entries.

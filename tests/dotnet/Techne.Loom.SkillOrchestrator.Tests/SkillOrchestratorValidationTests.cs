@@ -455,7 +455,7 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
     public async Task CliCompile_UnsupportedAskUserContractVersion_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-invalid-user-input-{Guid.NewGuid():N}.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"fixture-skill--invalid-input-{Guid.NewGuid():N}.json");
         var instance = CreateAskUserRuntimeOwnedFieldWorkflow();
         var askTransition = instance.GetTransitionNodes().Values
             .OfType<CommandTransition>()
@@ -486,7 +486,7 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
     public async Task CliCompile_AskUserRuntimeOwnedField_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-invalid-ask-{Guid.NewGuid():N}.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"fixture-skill--invalid-ask-{Guid.NewGuid():N}.json");
         await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateAskUserRuntimeOwnedFieldWorkflow()));
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
@@ -673,7 +673,7 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
     public async Task CliRun_InvalidGovernedWorkflow_IsRejectedOnLoadWithoutCompile()
     {
         var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-invalid-run-{Guid.NewGuid():N}.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"fixture-skill--invalid-run-{Guid.NewGuid():N}.json");
         await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateAskUserRuntimeOwnedFieldWorkflow()));
 
         var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowFile}\"");

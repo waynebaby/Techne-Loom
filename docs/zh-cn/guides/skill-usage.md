@@ -257,7 +257,7 @@ Goal: 把这个确定型 skill 纳入 Loom Skill Orchestrator governance
 Requested skill changes:
 - 刷新 SKILL.md 治理文案
 - 在 <execution-output-root>/plan/skill-plan.md 生成 runtime-owned plan
-- 创建或刷新 assets/so-workflow/so-template.json
+- 创建或刷新 assets/so-workflow/my-skill--so-template.json
 - 对齐 assets/so-workflow/so-package-lock.json
 ```
 

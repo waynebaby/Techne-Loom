@@ -1,14 +1,14 @@
 # Loom Skill Enhancement Self-Bootstrap Governance Notes
 
-- Bound SO package runtime version: `0.5.8`.
+- Bound SO package runtime version: `0.5.9-beta`.
 
-- Bound unified Loom runtime package version: `0.5.4`.
+- Bound unified Loom runtime package version: `0.5.8-beta`.
 - This skill is self-bootstrapped through a checked-in workflow template under Loom Skill Orchestrator governance.
 - This self-bootstrap pass uses `/loom-skill-enhancement` as the current skill being enhanced; it does not change the generic mission of rewriting any skill being enhanced.
-- The template authority is `assets/so-workflow/so-template.json`.
+- The template authority is `assets/so-workflow/loom-skill-enhancement--so-template.json`.
 - The planning artifact is a temporary, runtime-owned file for one enhancement run and must stay at `<execution-output-root>/plan/skill-plan.md`. Never copy, move, migrate, or include its content in the skill being enhanced's assets, package, release, or deliverables. Runtime context and evidence may retain the path; a hash is optional generated metadata only and never a consumer validity, freshness, or revision gate. Do not require or publish a checked-in `assets/so-workflow/skill-plan.md`.
 - The runtime lock is `assets/so-workflow/so-package-lock.json`.
-- The current checked-in authority surface for this slice is `SKILL.md`, `assets/so-workflow/so-template.json`, `assets/so-workflow/contract.json`, `assets/so-workflow/governance-notes.md`, `assets/so-workflow/node-to-file-map.md`, `assets/so-workflow/so-package-lock.json`, `reference/execution-contract.md`, `reference/so-skill-reference.md`, `reference/review-and-evidence-contract.md`, `reference/plain-language-feedback.md`, and the affected workflow-designer authority documents; the per-run plan stays under the execution output root.
+- The current checked-in authority surface for this slice is `SKILL.md`, `assets/so-workflow/loom-skill-enhancement--so-template.json`, `assets/so-workflow/contract.json`, `assets/so-workflow/governance-notes.md`, `assets/so-workflow/node-to-file-map.md`, `assets/so-workflow/so-package-lock.json`, `reference/execution-contract.md`, `reference/so-skill-reference.md`, `reference/review-and-evidence-contract.md`, `reference/plain-language-feedback.md`, and the affected workflow-designer authority documents; the per-run plan stays under the execution output root.
 - The workflow first classifies governance state. If the target is already under Loom Skill Orchestrator governance, it inspects the current `SKILL.md`, package lock, and workflow assets, reuses the exact bound runtime version, captures a fresh guide, builds one bounded shared review context, and routes the three independent guide-delta reviews in an external `whenAllPass` group.
 - After every re-enhancement gap result returns, one aggregator preserves all findings and dispositions before the explicit template-change strategy judgment. It records `local_patch`, `structural_refactor`, or `full_regeneration` as runtime-owned evidence before common plan analysis.
 - `local_patch` is restricted to non-structural wording or metadata changes. `structural_refactor` requires an explicit old-to-new node and evidence mapping. `full_regeneration` is required when the old template conflicts with current requirements, concept documents, or the fresh guide, or when preserving the old shape would hide new behavior.

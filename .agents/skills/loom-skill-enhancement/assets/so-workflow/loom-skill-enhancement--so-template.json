@@ -631,7 +631,7 @@
         "parameters": {
           "assetRootInput": "target_skill_path",
           "checkedInAssets": [
-            "assets/so-workflow/so-template.json",
+            "assets/so-workflow/loom-skill-enhancement--so-template.json",
             "assets/so-workflow/contract.json",
             "assets/so-workflow/node-to-file-map.md",
             "assets/so-workflow/governance-notes.md",
@@ -964,7 +964,7 @@
             "SKILL.md",
             "assets/so-workflow/contract.json",
             "reference/so-skill-reference.md",
-            "assets/so-workflow/so-template.json",
+            "assets/so-workflow/loom-skill-enhancement--so-template.json",
             "assets/so-workflow/so-package-lock.json"
           ],
           "requiredInputs": [
@@ -1610,7 +1610,7 @@
           "outputBindings": {
             "workflow_runtime_copy_json": "$result"
           },
-          "sourceTemplatePath": "assets/so-workflow/so-template.json"
+          "sourceTemplatePath": "assets/so-workflow/loom-skill-enhancement--so-template.json"
         },
         "currentRetryCount": 0
       },
@@ -1660,7 +1660,7 @@
           "mustMatchContextInputs": [
             "workflow_runtime_copy_json"
           ],
-          "runtimeCopyPath": "workflow.current.json",
+          "runtimeCopyPath": "loom-skill-enhancement--workflow.current.json",
           "auditArtifactFamilies": [
             "workflow_runtime_copy_json",
             "event_log_file",
@@ -1748,7 +1748,7 @@
             "completion_manifest_reference": "$result",
             "mermaid_delivery": "$context:mermaid_delivery"
           },
-          "content": "# Governance Verdict\r\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\r\n- Current status: completed on the terminal official runnable route that emitted this manifest.\r\n- Current node: state.done\r\n- Final Done reached: yes on the route that emitted this manifest.\r\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\r\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\r\n\r\n# Evidence Checklist\r\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\r\n- event_log_file: runtime-owned event log for the same chain.\r\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\r\n- commit_report_ready: completion-time handoff readiness evidence.\r\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\r\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\r\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\r\n- internal_document_evidence: target-local document snapshots and manifest provenance were inspected under the declared root of the skill being enhanced.\r\n- requested_checked_in_deliverables (planned/in-scope only; current authoritative scope-plan list): SKILL.md, reference/planning-and-validation.md, reference/review-and-evidence-contract.md, assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md, assets/so-workflow/contract.json, assets/so-workflow/so-template.json, assets/so-workflow/node-to-file-map.md, and assets/so-workflow/governance-notes.md. These paths identify planned scope only; they do not prove that any file changed.\r\n- actual_changed_files_evidence: list only checked-in paths supported by batch_repair_evidence, completion_by_target_skill_changes, or concrete diff evidence, and cite the evidence for each path. If none are confirmed, state that none are verified. Never treat scope-plan paths, node_to_file_map, or this manifest as proof that a file changed.\r\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\r\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\r\n- workflow_dataflow_json: runtime-owned dataflow report for the same official run or resume.\r\n- skill_plan_md: runtime-owned per-run plan at \u003Cexecution-output-root\u003E/plan/skill-plan.md.\r\n- governance_notes_md: checked-in governance-notes.md source reference in node_to_file_map.\r\n- mermaid_delivery: verified Mermaid, HTML, Analysis, and Dataflow delivery evidence.\r\n- batch_repair_evidence: the single coordinated pre-validation repair record.\r\n- aggregated_post_fix_validation: the complete aggregate of every post-fix validator result.\r\n- serial_validation_evidence: the final ordered serial validation result.\r\n\r\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
+          "content": "# Governance Verdict\r\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\r\n- Current status: completed on the terminal official runnable route that emitted this manifest.\r\n- Current node: state.done\r\n- Final Done reached: yes on the route that emitted this manifest.\r\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\r\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\r\n\r\n# Evidence Checklist\r\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\r\n- event_log_file: runtime-owned event log for the same chain.\r\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\r\n- commit_report_ready: completion-time handoff readiness evidence.\r\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\r\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\r\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\r\n- internal_document_evidence: target-local document snapshots and manifest provenance were inspected under the declared root of the skill being enhanced.\r\n- requested_checked_in_deliverables (planned/in-scope only; current authoritative scope-plan list): SKILL.md, reference/planning-and-validation.md, reference/review-and-evidence-contract.md, assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md, assets/so-workflow/contract.json, assets/so-workflow/loom-skill-enhancement--so-template.json, assets/so-workflow/node-to-file-map.md, and assets/so-workflow/governance-notes.md. These paths identify planned scope only; they do not prove that any file changed.\r\n- actual_changed_files_evidence: list only checked-in paths supported by batch_repair_evidence, completion_by_target_skill_changes, or concrete diff evidence, and cite the evidence for each path. If none are confirmed, state that none are verified. Never treat scope-plan paths, node_to_file_map, or this manifest as proof that a file changed.\r\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\r\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\r\n- workflow_dataflow_json: runtime-owned dataflow report for the same official run or resume.\r\n- skill_plan_md: runtime-owned per-run plan at \u003Cexecution-output-root\u003E/plan/skill-plan.md.\r\n- governance_notes_md: checked-in governance-notes.md source reference in node_to_file_map.\r\n- mermaid_delivery: verified Mermaid, HTML, Analysis, and Dataflow delivery evidence.\r\n- batch_repair_evidence: the single coordinated pre-validation repair record.\r\n- aggregated_post_fix_validation: the complete aggregate of every post-fix validator result.\r\n- serial_validation_evidence: the final ordered serial validation result.\r\n\r\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
         },
         "currentRetryCount": 0
       },
@@ -1831,7 +1831,7 @@
           "checkedInAssets": [
             "SKILL.md",
             "assets/so-workflow/so-package-lock.json",
-            "assets/so-workflow/so-template.json",
+            "assets/so-workflow/loom-skill-enhancement--so-template.json",
             "assets/so-workflow/contract.json",
             "assets/so-workflow/governance-notes.md",
             "assets/so-workflow/node-to-file-map.md",
@@ -2654,12 +2654,13 @@
     }
   },
   "templateKind": "so-governed-target-skill",
+  "ownerSkillSlug": "loom-skill-enhancement",
   "taskType": "skill_enhancement",
   "workflowKind": "so_self_bootstrap",
   "caseId": "loom-skill-enhancement-self-bootstrap",
   "runId": "template:loom-skill-enhancement-self-bootstrap",
   "runtimeBinding": "dotnet-so",
-  "runtimeVersion": "0.5.4",
+  "runtimeVersion": "0.5.8-beta",
   "expressionBinding": {
     "language": "csharp",
     "languageVersion": "12",

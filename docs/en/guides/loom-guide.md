@@ -3,8 +3,8 @@
 [中文](../../zh-cn/guides/loom-guide.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.8
-Build: published package 0.5.8
+Version: 0.5.9-beta
+Build: published package 0.5.9-beta
 <!-- guide-version:end -->
 
 

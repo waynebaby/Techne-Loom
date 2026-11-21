@@ -107,6 +107,37 @@ public sealed class WorkflowBuilderExportCliTests
         }
     }
 
+    [Fact]
+    public async Task EditMode_RequiresSkillPrefixForOwnedOutput()
+    {
+        var root = Directory.CreateTempSubdirectory("loom-ao-builder-skill-name-").FullName;
+        try
+        {
+            var export = await RunCliAsync($"--schema-demo-output \"{root}\"");
+            Assert.True(export.ExitCode == 0, export.StdOut + export.StdErr);
+            var demo = Path.Combine(root, "workflow.demo.json");
+            var script = Path.Combine(root, "edit.cs");
+            var input = Path.Combine(root, "input.json");
+            var invalid = Path.Combine(root, "candidate.json");
+            var valid = Path.Combine(root, "sample-skill--candidate.json");
+            await File.WriteAllTextAsync(script, "using Techne.Loom.Abstractions.TaskTracking.Model; namespace Techne.Loom.WorkflowScripts; public static class WorkflowInstanceBuilder { public static WorkflowInstance Edit(WorkflowInstance workflow, WorkflowScriptInput input) { workflow.OwnerSkillSlug = \"sample-skill\"; return workflow; } }");
+            await File.WriteAllTextAsync(input, "{\"runtimeBinding\":\"dotnet-ao\"}");
+
+            var rejected = await RunCliAsync($"--workflow-script --mode edit --script-file \"{script}\" --input-file \"{input}\" --base-workflow-file \"{demo}\" --output-file \"{invalid}\"");
+            Assert.NotEqual(0, rejected.ExitCode);
+            Assert.Contains("must begin with", rejected.StdOut + rejected.StdErr, StringComparison.Ordinal);
+            Assert.False(File.Exists(invalid));
+
+            var accepted = await RunCliAsync($"--workflow-script --mode edit --script-file \"{script}\" --input-file \"{input}\" --base-workflow-file \"{demo}\" --output-file \"{valid}\"");
+            Assert.True(accepted.ExitCode == 0, accepted.StdOut + accepted.StdErr);
+            Assert.Equal("sample-skill", WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(valid)).OwnerSkillSlug);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(string arguments)
     {
         var assemblyPath = typeof(WorkflowBuilderExportCliTests).Assembly.Location;

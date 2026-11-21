@@ -205,7 +205,7 @@
       "$kind": "state",
       "id": "state.replan_strategy",
       "name": "Select Replan Strategy",
-      "description": "Give the \u0060loom agent prompt-replan\u0060 planner retained blocker history and require one explicit recovery strategy.",
+      "description": "Give the `loom agent prompt-replan` planner retained blocker history and require one explicit recovery strategy.",
       "workflowPhase": "03 Official Runnable",
       "groups": [
         {
@@ -223,7 +223,7 @@
       "$kind": "state",
       "id": "state.replan_route",
       "name": "Route Selected Replan Strategy",
-      "description": "Select exactly one of the five recovery strategies returned by \u0060loom agent prompt-replan\u0060.",
+      "description": "Select exactly one of the five recovery strategies returned by `loom agent prompt-replan`.",
       "workflowPhase": "03 Official Runnable",
       "groups": [
         {
@@ -400,7 +400,7 @@
       "maxRetries": 3,
       "id": "transition.reacquire_runtime",
       "name": "Acquire exact SO RID package",
-      "description": "Pause for host-native acquisition, integrity checks, and safe extraction of the exact unified \u0060Techne.Loom.Runtime.\u003Crid\u003E\u0060 package for the detected RID, then return package and apphost evidence before the first runtime command.",
+      "description": "Pause for host-native acquisition, integrity checks, and safe extraction of the exact unified `Techne.Loom.Runtime.<rid>` package for the detected RID, then return package and apphost evidence before the first runtime command.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "priority": 100,
@@ -453,19 +453,19 @@
       "maxRetries": 3,
       "id": "transition.capture_guide",
       "name": "Capture fresh guide surface",
-      "description": "Pause for the first direct \u0060loom --guide\u0060 call from the extracted verified unified Loom apphost (\u0060loom.exe\u0060 on Windows) and return its fresh guide result before plan-execution operations.",
+      "description": "Pause for the first direct `loom --guide` call from the extracted verified unified Loom apphost (`loom.exe` on Windows) and return its fresh guide result before plan-execution operations.",
       "targetNodeId": "state.collect_scope",
       "outputPath": "resolved_guide_surface",
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022runtime_preflight_result\u0022) \u0026\u0026 context.Has(\u0022resolved_runtime_version_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_package_identity_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_extraction_directory_ref\u0022) \u0026\u0026 context.Has(\u0022resolved_guide_surface_ref\u0022)",
+        "source": "context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_package_identity_ref\") && context.Has(\"runtime_extraction_directory_ref\") && context.Has(\"resolved_guide_surface_ref\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022runtime_preflight_result\u0022) \u0026\u0026 context.Has(\u0022resolved_runtime_version_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_package_identity_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_extraction_directory_ref\u0022)",
+        "source": "context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_package_identity_ref\") && context.Has(\"runtime_extraction_directory_ref\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -489,9 +489,10 @@
           "requiredInputs": [
             "governanceScope"
           ],
-          "skillHint": "Collect the user-owned AO governance scope and return it through the required governanceScope binding. Use the user\u0027s requested language. When the host identifies autopilot or unattended mode, do not call a blocking user-input tool, open a browser, or wait. Only for a session that does not require genuine human approval, if the same active AskUser session has an endpoint returned by the runtime (\u0060ask_user\u0060 payload \u0060endpoints\u0060 for SO), use only that endpoint and the supported HTTP session/submission flow: read the active contract, infer type-valid answers from available workflow context, and submit them. Do not start a second worker, guess a URL, or expose pairing/session credentials. Clearly warn that answers are agent-generated, not user-confirmed. If this AskUser requires genuine human approval, do not submit an agent-generated approval via HTTP or result-file continuation and do not consume the active session; provide clearly warned suggestions only and leave the workflow and any session waiting for the human\u0027s actual approval. Preserve the user-absence explanation in a caller-provided additional-context field when writable, or in question context before the session starts; never mutate an active contract, invent AskUser wire fields, or disguise the note as an answer. Warn in the result if no writable field exists. If no usable endpoint or HTTP submission is possible, skip the interactive ask, generate the best-supported answers and warn, but never fabricate a receipt or bypass owning-runtime validation. For structured AskUser, continue only when the owning runtime accepts a real validated receipt. For unstructured AskUser that does not require genuine human approval, use only a supported noninteractive continuation that passes owning-runtime validation. If the required receipt or supported continuation is unavailable, explain that the workflow remains waiting. Outside autopilot, for unstructured AskUser, use the normal host-approved interactive user-input handoff. Do not expect an AskUser worker endpoint or receipt; resume with the user\u0027s answer using a supported result-file continuation that passes owning-runtime validation. For structured AskUser, read the endpoint from the same SO runtime-returned structured result (\u0060ask_user\u0060 payload \u0060endpoints\u0060 for SO) and use only endpoint URLs returned by the runtime. Use loopback only when the embedded browser can reach the worker host; otherwise use only a host-provided, approved HTTPS reverse-proxy candidate. Select routes using the embedded browser network context, not shell or worker reachability. Never rewrite a hostname, infer a public address from untrusted forwarded headers, or create a tunnel. Open the selected URL itself only through the initiating agent embedded-browser capability; never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser. Treat the full endpoint URL, including any one-time pairing fragment, as a secret; pass it directly to the embedded browser and keep it out of logs, progress text, audit artifacts, and ordinary output. If no returned approved route is reachable, leave the ask pending. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that route.\n\nBounded-request default: use the scope and facts already supplied by the user or available in the checked references. Do not ask again for known facts or routine reversible choices; use a safe reversible default and continue. Ask only when a necessary user-owned decision is genuinely missing or real human approval is required. Never infer or claim approval, fabricate evidence or live external results, or bypass a policy or security stop. If a policy or security control blocks an action, preserve the block and its evidence and wait for an approved remedy.",
+          "skillHint": "Collect the user-owned AO governance scope and return it through the required governanceScope binding. Use the user's requested language. When the host identifies autopilot or unattended mode, do not call a blocking user-input tool, open a browser, or wait. Only for a session that does not require genuine human approval, if the same active AskUser session has an endpoint returned by the runtime (`ask_user` payload `endpoints` for SO), use only that endpoint and the supported HTTP session/submission flow: read the active contract, infer type-valid answers from available workflow context, and submit them. Do not start a second worker, guess a URL, or expose pairing/session credentials. Clearly warn that answers are agent-generated, not user-confirmed. If this AskUser requires genuine human approval, do not submit an agent-generated approval via HTTP or result-file continuation and do not consume the active session; provide clearly warned suggestions only and leave the workflow and any session waiting for the human's actual approval. Preserve the user-absence explanation in a caller-provided additional-context field when writable, or in question context before the session starts; never mutate an active contract, invent AskUser wire fields, or disguise the note as an answer. Warn in the result if no writable field exists. If no usable endpoint or HTTP submission is possible, skip the interactive ask, generate the best-supported answers and warn, but never fabricate a receipt or bypass owning-runtime validation. For structured AskUser, continue only when the owning runtime accepts a real validated receipt. For unstructured AskUser that does not require genuine human approval, use only a supported noninteractive continuation that passes owning-runtime validation. If the required receipt or supported continuation is unavailable, explain that the workflow remains waiting. Outside autopilot, for unstructured AskUser, use the normal host-approved interactive user-input handoff. Do not expect an AskUser worker endpoint or receipt; resume with the user's answer using a supported result-file continuation that passes owning-runtime validation. For structured AskUser, read the endpoint from the same SO runtime-returned structured result (`ask_user` payload `endpoints` for SO) and use only endpoint URLs returned by the runtime. Use loopback only when the embedded browser can reach the worker host; otherwise use only a host-provided, approved HTTPS reverse-proxy candidate. Select routes using the embedded browser network context, not shell or worker reachability. Never rewrite a hostname, infer a public address from untrusted forwarded headers, or create a tunnel. Open the selected URL itself only through the initiating agent embedded-browser capability; never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser. Treat the full endpoint URL, including any one-time pairing fragment, as a secret; pass it directly to the embedded browser and keep it out of logs, progress text, audit artifacts, and ordinary output. If no returned approved route is reachable, leave the ask pending. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that route.\n\nBounded-request default: use the scope and facts already supplied by the user or available in the checked references. Do not ask again for known facts or routine reversible choices; use a safe reversible default and continue. Ask only when a necessary user-owned decision is genuinely missing or real human approval is required. Never infer or claim approval, fabricate evidence or live external results, or bypass a policy or security stop. If a policy or security control blocks an action, preserve the block and its evidence and wait for an approved remedy.",
           "outputBindings": {
-            "governanceScope": "$result"
+            "governanceScope": "$result",
+            "terminal_business_objective": "$context:plan.requested_business_outcome"
           }
         },
         "currentRetryCount": 0
@@ -506,7 +507,7 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022governanceScope\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022governanceScope\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0))",
+        "source": "context.Has(\"governanceScope\") && Regex.IsMatch(context.Get<string>(\"governanceScope\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0))",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -547,7 +548,7 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022skillReview\u0022) \u0026\u0026 context.Get\u003Cobject\u003E(\u0022skillReview\u0022) != null \u0026\u0026 context.Has(\u0022skillReview.schemaVersion\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022skillReview.schemaVersion\u0022) == \u0022loom.plan.skill-review-summary.v2\u0022 \u0026\u0026 context.Has(\u0022skillReview.review_kind\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022skillReview.review_kind\u0022) == \u0022plan-skill-markdown\u0022 \u0026\u0026 context.Has(\u0022skillReview.reviewPath\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022skillReview.reviewPath\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) \u0026\u0026 context.Has(\u0022skillReview.verdict\u0022) \u0026\u0026 context.Has(\u0022skillReview.findingCount\u0022) \u0026\u0026 context.Has(\u0022skillReview.evidenceCount\u0022) \u0026\u0026 context.Get\u003Clong\u003E(\u0022skillReview.evidenceCount\u0022) \u003E 0 \u0026\u0026 context.Has(\u0022skillReview.checked_in_skill_markdown_asset\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022skillReview.checked_in_skill_markdown_asset\u0022) == \u0022SKILL.md\u0022 \u0026\u0026 ((context.Get\u003Cstring\u003E(\u0022skillReview.verdict\u0022) == \u0022passed\u0022 \u0026\u0026 context.Get\u003Clong\u003E(\u0022skillReview.findingCount\u0022) == 0) || (context.Get\u003Cstring\u003E(\u0022skillReview.verdict\u0022) == \u0022needs_changes\u0022 \u0026\u0026 context.Get\u003Clong\u003E(\u0022skillReview.findingCount\u0022) \u003E 0))",
+        "source": "context.Has(\"skillReview\") && context.Get<object>(\"skillReview\") != null && context.Has(\"skillReview.schemaVersion\") && context.Get<string>(\"skillReview.schemaVersion\") == \"loom.plan.skill-review-summary.v2\" && context.Has(\"skillReview.review_kind\") && context.Get<string>(\"skillReview.review_kind\") == \"plan-skill-markdown\" && context.Has(\"skillReview.reviewPath\") && Regex.IsMatch(context.Get<string>(\"skillReview.reviewPath\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) && context.Has(\"skillReview.verdict\") && context.Has(\"skillReview.findingCount\") && context.Has(\"skillReview.evidenceCount\") && context.Get<long>(\"skillReview.evidenceCount\") > 0 && context.Has(\"skillReview.checked_in_skill_markdown_asset\") && context.Get<string>(\"skillReview.checked_in_skill_markdown_asset\") == \"SKILL.md\" && ((context.Get<string>(\"skillReview.verdict\") == \"passed\" && context.Get<long>(\"skillReview.findingCount\") == 0) || (context.Get<string>(\"skillReview.verdict\") == \"needs_changes\" && context.Get<long>(\"skillReview.findingCount\") > 0))",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -585,7 +586,7 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022designerReview\u0022) \u0026\u0026 context.Get\u003Cobject\u003E(\u0022designerReview\u0022) != null \u0026\u0026 context.Has(\u0022designerReview.schemaVersion\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022designerReview.schemaVersion\u0022) == \u0022loom.plan.designer-review-summary.v2\u0022 \u0026\u0026 context.Has(\u0022designerReview.review_kind\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022designerReview.review_kind\u0022) == \u0022plan-workflow-designer\u0022 \u0026\u0026 context.Has(\u0022designerReview.producerName\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022designerReview.producerName\u0022) == \u0022loom-plan-execution Workflow Designer Contract Reviewer\u0022 \u0026\u0026 context.Has(\u0022designerReview.transitionId\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022designerReview.transitionId\u0022) == \u0022transition.review_ao_workflow_designer\u0022 \u0026\u0026 context.Has(\u0022designerReview.targetSkillRoot\u0022) \u0026\u0026 context.Has(\u0022target_skill_path\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022designerReview.targetSkillRoot\u0022) == context.Get\u003Cstring\u003E(\u0022target_skill_path\u0022) \u0026\u0026 context.Has(\u0022designerReview.reviewPath\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022designerReview.reviewPath\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) \u0026\u0026 context.Has(\u0022designerReview.instanceId\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022designerReview.instanceId\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) \u0026\u0026 context.Has(\u0022designerReview.caseId\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022designerReview.caseId\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) \u0026\u0026 context.Has(\u0022designerReview.runId\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022designerReview.runId\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) \u0026\u0026 context.Has(\u0022designerReview.waitId\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022designerReview.waitId\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) \u0026\u0026 context.Has(\u0022designerReview.verdict\u0022) \u0026\u0026 context.Has(\u0022designerReview.findingCount\u0022) \u0026\u0026 context.Has(\u0022designerReview.evidenceCount\u0022) \u0026\u0026 context.Get\u003Clong\u003E(\u0022designerReview.evidenceCount\u0022) \u003E 0 \u0026\u0026 context.Has(\u0022designerReview.checked_in_workflow_designer_asset\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022designerReview.checked_in_workflow_designer_asset\u0022) == \u0022assets/agents/loom-plan-execution-workflow-designer.agent.md\u0022 \u0026\u0026 ((context.Get\u003Cstring\u003E(\u0022designerReview.verdict\u0022) == \u0022passed\u0022 \u0026\u0026 context.Get\u003Clong\u003E(\u0022designerReview.findingCount\u0022) == 0) || (context.Get\u003Cstring\u003E(\u0022designerReview.verdict\u0022) == \u0022needs_changes\u0022 \u0026\u0026 context.Get\u003Clong\u003E(\u0022designerReview.findingCount\u0022) \u003E 0))",
+        "source": "context.Has(\"designerReview\") && context.Get<object>(\"designerReview\") != null && context.Has(\"designerReview.schemaVersion\") && context.Get<string>(\"designerReview.schemaVersion\") == \"loom.plan.designer-review-summary.v2\" && context.Has(\"designerReview.review_kind\") && context.Get<string>(\"designerReview.review_kind\") == \"plan-workflow-designer\" && context.Has(\"designerReview.producerName\") && context.Get<string>(\"designerReview.producerName\") == \"loom-plan-execution Workflow Designer Contract Reviewer\" && context.Has(\"designerReview.transitionId\") && context.Get<string>(\"designerReview.transitionId\") == \"transition.review_ao_workflow_designer\" && context.Has(\"designerReview.targetSkillRoot\") && context.Has(\"target_skill_path\") && context.Get<string>(\"designerReview.targetSkillRoot\") == context.Get<string>(\"target_skill_path\") && context.Has(\"designerReview.reviewPath\") && Regex.IsMatch(context.Get<string>(\"designerReview.reviewPath\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) && context.Has(\"designerReview.instanceId\") && Regex.IsMatch(context.Get<string>(\"designerReview.instanceId\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) && context.Has(\"designerReview.caseId\") && Regex.IsMatch(context.Get<string>(\"designerReview.caseId\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) && context.Has(\"designerReview.runId\") && Regex.IsMatch(context.Get<string>(\"designerReview.runId\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) && context.Has(\"designerReview.waitId\") && Regex.IsMatch(context.Get<string>(\"designerReview.waitId\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) && context.Has(\"designerReview.verdict\") && context.Has(\"designerReview.findingCount\") && context.Has(\"designerReview.evidenceCount\") && context.Get<long>(\"designerReview.evidenceCount\") > 0 && context.Has(\"designerReview.checked_in_workflow_designer_asset\") && context.Get<string>(\"designerReview.checked_in_workflow_designer_asset\") == \"assets/agents/loom-plan-execution-workflow-designer.agent.md\" && ((context.Get<string>(\"designerReview.verdict\") == \"passed\" && context.Get<long>(\"designerReview.findingCount\") == 0) || (context.Get<string>(\"designerReview.verdict\") == \"needs_changes\" && context.Get<long>(\"designerReview.findingCount\") > 0))",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -623,7 +624,7 @@
             "firstDataRow": "true"
           },
           "contextFieldTypePolicy": {
-            "catalogReadCommand": "loom skill inspect-contract-fragment --contract-file \u003Cowning-contract\u003E --json-pointer /context_fields",
+            "catalogReadCommand": "loom skill inspect-contract-fragment --contract-file <owning-contract> --json-pointer /context_fields",
             "evidenceKey": "contextFieldTypeComparisons",
             "evidenceFile": "static-contract-review.json",
             "producerTypeSource": "actual producer output or authoritative producer schema",
@@ -653,13 +654,13 @@
       "maxRetries": 3,
       "id": "transition.refresh_governed_template",
       "name": "Refresh governed template",
-      "description": "Refresh the governed template with current review findings and require a passed static-contract-review descriptor plus passing phase_design_evidence linked to phaseDesignEvidence in the same report before compile review. Map the skill being enhanced\u0027s SKILL.md as Priority 1 before supporting files; compare every changed context_fields type with actual producer output or an authoritative producer schema and record contextFieldTypeComparisons in static-contract-review.json.",
+      "description": "Refresh the governed template with current review findings and require a passed static-contract-review descriptor plus passing phase_design_evidence linked to phaseDesignEvidence in the same report before compile review. Map the skill being enhanced's SKILL.md as Priority 1 before supporting files; compare every changed context_fields type with actual producer output or an authoritative producer schema and record contextFieldTypeComparisons in static-contract-review.json.",
       "targetNodeId": "state.compile_review",
       "outputPath": "templateRefresh",
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022templateRefresh\u0022) \u0026\u0026 context.Get\u003Cobject\u003E(\u0022templateRefresh\u0022) != null \u0026\u0026 context.Has(\u0022templateRefresh.schemaVersion\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022templateRefresh.schemaVersion\u0022) == \u0022loom.plan.so-template-refresh.v1\u0022 \u0026\u0026 context.Has(\u0022templateRefresh.producerName\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022templateRefresh.producerName\u0022) == \u0022loom-skill-enhancement Workflow Designer\u0022 \u0026\u0026 context.Has(\u0022templateRefresh.verdict\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022templateRefresh.verdict\u0022) == \u0022passed\u0022 \u0026\u0026 context.Has(\u0022templateRefresh.candidate_path\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022templateRefresh.candidate_path\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) \u0026\u0026 context.Has(\u0022templateRefresh.static_review_path\u0022) \u0026\u0026 context.Has(\u0022static_contract_review.path\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022templateRefresh.static_review_path\u0022) == context.Get\u003Cstring\u003E(\u0022static_contract_review.path\u0022) \u0026\u0026 context.Has(\u0022phase_design_evidence\u0022) \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022phase_design_evidence\u0022) != null \u0026\u0026 context.Has(\u0022phase_design_evidence.verdict\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022phase_design_evidence.verdict\u0022) == \u0022passed\u0022 \u0026\u0026 context.Has(\u0022phase_design_evidence.record_key\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022phase_design_evidence.record_key\u0022) == \u0022phaseDesignEvidence\u0022 \u0026\u0026 context.Has(\u0022static_contract_review\u0022) \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022static_contract_review\u0022) != null \u0026\u0026 context.Has(\u0022static_contract_review.verdict\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022static_contract_review.verdict\u0022) == \u0022passed\u0022 \u0026\u0026 context.Has(\u0022phase_design_evidence.record_path\u0022) \u0026\u0026 context.Has(\u0022static_contract_review.path\u0022) \u0026\u0026 Regex.IsMatch(context.Get\u003Cstring\u003E(\u0022static_contract_review.path\u0022), @\u0022\\S\u0022, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022phase_design_evidence.record_path\u0022) == context.Get\u003Cstring\u003E(\u0022static_contract_review.path\u0022)",
+        "source": "context.Has(\"templateRefresh\") && context.Get<object>(\"templateRefresh\") != null && context.Has(\"templateRefresh.schemaVersion\") && context.Get<string>(\"templateRefresh.schemaVersion\") == \"loom.plan.so-template-refresh.v1\" && context.Has(\"templateRefresh.producerName\") && context.Get<string>(\"templateRefresh.producerName\") == \"loom-skill-enhancement Workflow Designer\" && context.Has(\"templateRefresh.verdict\") && context.Get<string>(\"templateRefresh.verdict\") == \"passed\" && context.Has(\"templateRefresh.candidate_path\") && Regex.IsMatch(context.Get<string>(\"templateRefresh.candidate_path\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) && context.Has(\"templateRefresh.static_review_path\") && context.Has(\"static_contract_review.path\") && context.Get<string>(\"templateRefresh.static_review_path\") == context.Get<string>(\"static_contract_review.path\") && context.Has(\"phase_design_evidence\") && context.Get<object?>(\"phase_design_evidence\") != null && context.Has(\"phase_design_evidence.verdict\") && context.Get<string>(\"phase_design_evidence.verdict\") == \"passed\" && context.Has(\"phase_design_evidence.record_key\") && context.Get<string>(\"phase_design_evidence.record_key\") == \"phaseDesignEvidence\" && context.Has(\"static_contract_review\") && context.Get<object?>(\"static_contract_review\") != null && context.Has(\"static_contract_review.verdict\") && context.Get<string>(\"static_contract_review.verdict\") == \"passed\" && context.Has(\"phase_design_evidence.record_path\") && context.Has(\"static_contract_review.path\") && Regex.IsMatch(context.Get<string>(\"static_contract_review.path\"), @\"\\S\", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(100.0)) && context.Get<string>(\"phase_design_evidence.record_path\") == context.Get<string>(\"static_contract_review.path\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -683,7 +684,7 @@
         "environmentKey": "",
         "parameters": {
           "resumeOutputKey": "workflow_compile_feedback",
-          "skillHint": "Compile the proposed template through the unified \u0060loom\u0060 apphost using \u0060loom skill compile\u0060 and use that same compile audit. Follow assets/so-workflow/compile-feedback-summary.schema.json, read workflow.compile-feedback.json, and return only its recorded status as workflow_compile_feedback.status, while retaining the complete feedback externally. Return the Mermaid, HTML, analysis, and dataflow paths from that compile. A status summary and paths alone do not prove approval or evidence authenticity.",
+          "skillHint": "Compile the proposed template through the unified `loom` apphost using `loom skill compile` and use that same compile audit. Follow assets/so-workflow/compile-feedback-summary.schema.json, read workflow.compile-feedback.json, and return only its recorded status as workflow_compile_feedback.status, while retaining the complete feedback externally. Return the Mermaid, HTML, analysis, and dataflow paths from that compile. A status summary and paths alone do not prove approval or evidence authenticity.",
           "projectionMode": "canonical",
           "requiredInputs": [
             "workflow_mermaid_md",
@@ -752,7 +753,7 @@
       "maxRetries": 3,
       "id": "transition.run_official_route",
       "name": "Run loom agent route",
-      "description": "Execute the public \u0060loom agent run\u0060 route and return its actual result without synthesizing status or terminal evidence.",
+      "description": "Execute the public `loom agent run` route and return its actual result without synthesizing status or terminal evidence.",
       "targetNodeId": "state.runtime_result",
       "outputPath": "runResult",
       "priority": 100,
@@ -794,13 +795,13 @@
       "priority": 0,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022blocked\u0022",
+        "source": "context.Get<string>(\"runResult.status\") == \"blocked\"",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022blocked\u0022",
+        "source": "context.Get<string>(\"runResult.status\") == \"blocked\"",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -839,18 +840,18 @@
       "maxRetries": 3,
       "id": "transition.route_run_terminal",
       "name": "Complete terminal run result",
-      "description": "Move to \u0060Done\u0060 only when the actual \u0060loom agent run\u0060 result is completed and carries its \u0060terminal_evidence\u0060 object.",
+      "description": "Move to `Done` only when the actual `loom agent run` result is completed and carries its `terminal_evidence` object.",
       "targetNodeId": "state.done",
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022runResult.terminal_evidence\u0022) != null",
+        "source": "context.Get<string>(\"runResult.status\") == \"completed\" && context.Get<object?>(\"runResult.terminal_evidence\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022runResult.terminal_evidence\u0022) != null",
+        "source": "context.Get<string>(\"runResult.status\") == \"completed\" && context.Get<object?>(\"runResult.terminal_evidence\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -924,13 +925,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022replan_history\u0022) \u0026\u0026 context.Has(\u0022blocker_report\u0022) \u0026\u0026 context.Has(\u0022attempt_history\u0022) \u0026\u0026 context.Has(\u0022audit_artifacts\u0022)",
+        "source": "context.Has(\"replan_history\") && context.Has(\"blocker_report\") && context.Has(\"attempt_history\") && context.Has(\"audit_artifacts\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022event_log_file\u0022) != null \u0026\u0026 context.Has(\u0022workflow_runtime_copy_json\u0022)",
+        "source": "context.Get<string>(\"event_log_file\") != null && context.Has(\"workflow_runtime_copy_json\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -983,19 +984,19 @@
       "maxRetries": 3,
       "id": "transition.plan_recovery_strategy",
       "name": "Plan recovery strategy",
-      "description": "Give the \u0060loom agent prompt-replan\u0060 planner retained blocker history and require one explicit strategy plus a viable terminal path.",
+      "description": "Give the `loom agent prompt-replan` planner retained blocker history and require one explicit strategy plus a viable terminal path.",
       "targetNodeId": "state.replan_route",
       "outputPath": "replan_strategy",
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) != null \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") != null && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cobject\u003E(\u0022replan_history\u0022) != null",
+        "source": "context.Get<object>(\"replan_history\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1010,13 +1011,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022continue_from_current\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") == \"continue_from_current\" && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1031,13 +1032,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022rollback_to_unconfirmed\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") == \"rollback_to_unconfirmed\" && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1052,13 +1053,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022redesign_from_current\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") == \"redesign_from_current\" && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1073,13 +1074,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null",
+        "source": "context.Get<string>(\"candidate_terminal_path\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022full_redesign\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") == \"full_redesign\" && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1094,13 +1095,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring?\u003E(\u0022rollback_plan.status\u0022) == \u0022validated\u0022 \u0026\u0026 context.Has(\u0022rollback_plan.steps\u0022)",
+        "source": "context.Get<string?>(\"rollback_plan.status\") == \"validated\" && context.Has(\"rollback_plan.steps\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022reversible_workaround\u0022 \u0026\u0026 context.Get\u003Cstring?\u003E(\u0022rollback_plan.status\u0022) == \u0022validated\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") == \"reversible_workaround\" && context.Get<string?>(\"rollback_plan.status\") == \"validated\" && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1136,13 +1137,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null",
+        "source": "context.Get<string>(\"candidate_terminal_path\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022continue_from_current\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") == \"continue_from_current\" && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1178,13 +1179,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null",
+        "source": "context.Get<string>(\"candidate_terminal_path\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022rollback_to_unconfirmed\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") == \"rollback_to_unconfirmed\" && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1220,13 +1221,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null",
+        "source": "context.Get<string>(\"candidate_terminal_path\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022redesign_from_current\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") == \"redesign_from_current\" && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1262,13 +1263,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null",
+        "source": "context.Get<string>(\"candidate_terminal_path\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022full_redesign\u0022",
+        "source": "context.Get<string>(\"replan_strategy\") == \"full_redesign\"",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1305,13 +1306,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring?\u003E(\u0022rollback_plan.status\u0022) == \u0022validated\u0022 \u0026\u0026 context.Has(\u0022rollback_plan.steps\u0022)",
+        "source": "context.Get<string?>(\"rollback_plan.status\") == \"validated\" && context.Has(\"rollback_plan.steps\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022reversible_workaround\u0022 \u0026\u0026 context.Get\u003Cstring?\u003E(\u0022rollback_plan.status\u0022) == \u0022validated\u0022",
+        "source": "context.Get<string>(\"replan_strategy\") == \"reversible_workaround\" && context.Get<string?>(\"rollback_plan.status\") == \"validated\"",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1361,13 +1362,13 @@
       "priority": 100,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022replan_evidence_references\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null",
+        "source": "context.Has(\"replan_evidence_references\") && context.Get<string>(\"candidate_terminal_path\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null",
+        "source": "context.Get<string>(\"candidate_terminal_path\") != null && context.Get<string>(\"replan_anchor\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1392,7 +1393,7 @@
       "maxRetries": 3,
       "id": "transition.resume_official_route",
       "name": "Resume loom agent route",
-      "description": "Resume the same \u0060loom agent\u0060 workflow copy after a blocked return and continue until final \u0060Done\u0060.",
+      "description": "Resume the same `loom agent` workflow copy after a blocked return and continue until final `Done`.",
       "targetNodeId": "state.replan_runtime_result",
       "outputPath": "resumeResult",
       "priority": 100,
@@ -1404,7 +1405,7 @@
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Has(\u0022replan_strategy\u0022) \u0026\u0026 context.Has(\u0022replan_anchor\u0022) \u0026\u0026 context.Has(\u0022candidate_terminal_path\u0022) \u0026\u0026 context.Has(\u0022replan_evidence_references\u0022)",
+        "source": "context.Has(\"replan_strategy\") && context.Has(\"replan_anchor\") && context.Has(\"candidate_terminal_path\") && context.Has(\"replan_evidence_references\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1431,20 +1432,20 @@
       "currentRetryCount": 0,
       "maxRetries": 3,
       "id": "transition.route_run_invalid",
-      "name": "Re-read the result from the same \u0060loom agent\u0060 workflow copy; never synthesize status or \u0060terminal_evidence\u0060.",
-      "description": "Keep the official \u0060loom agent run\u0060 route blocked until the same workflow-copy result has a recognized status and required terminal evidence.",
+      "name": "Re-read the result from the same `loom agent` workflow copy; never synthesize status or `terminal_evidence`.",
+      "description": "Keep the official `loom agent run` route blocked until the same workflow-copy result has a recognized status and required terminal evidence.",
       "targetNodeId": "state.runtime_result",
       "outputPath": "runResult",
       "priority": 1000,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) != null",
+        "source": "context.Get<string>(\"runResult.status\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) != \u0022blocked\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) != \u0022completed\u0022 || context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022runResult.terminal_evidence\u0022) == null",
+        "source": "context.Get<string>(\"runResult.status\") != \"blocked\" && context.Get<string>(\"runResult.status\") != \"completed\" || context.Get<string>(\"runResult.status\") == \"completed\" && context.Get<object?>(\"runResult.terminal_evidence\") == null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1483,7 +1484,7 @@
       "priority": 1000,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) != null \u0026\u0026 context.Get\u003Cstring\u003E(\u0022replan_anchor\u0022) != null \u0026\u0026 context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null",
+        "source": "context.Get<string>(\"replan_strategy\") != null && context.Get<string>(\"replan_anchor\") != null && context.Get<string>(\"candidate_terminal_path\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1528,7 +1529,7 @@
       "priority": 1000,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring?\u003E(\u0022rollback_plan.status\u0022) == \u0022validated\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022candidate_terminal_path\u0022) != null",
+        "source": "context.Get<string?>(\"rollback_plan.status\") == \"validated\" && context.Get<string>(\"candidate_terminal_path\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1584,13 +1585,13 @@
       "priority": 0,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) == \u0022blocked\u0022",
+        "source": "context.Get<string>(\"resumeResult.status\") == \"blocked\"",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) == \u0022blocked\u0022",
+        "source": "context.Get<string>(\"resumeResult.status\") == \"blocked\"",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1631,18 +1632,18 @@
       "maxRetries": 3,
       "id": "transition.route_resume_terminal",
       "name": "Complete terminal resume result",
-      "description": "Move to \u0060Done\u0060 only when the actual \u0060loom agent resume\u0060 result is completed and carries its \u0060terminal_evidence\u0060 object.",
+      "description": "Move to `Done` only when the actual `loom agent resume` result is completed and carries its `terminal_evidence` object.",
       "targetNodeId": "state.done",
       "priority": 1,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022resumeResult.terminal_evidence\u0022) != null",
+        "source": "context.Get<string>(\"resumeResult.status\") == \"completed\" && context.Get<object?>(\"resumeResult.terminal_evidence\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
       "guardExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022resumeResult.terminal_evidence\u0022) != null",
+        "source": "context.Get<string>(\"resumeResult.status\") == \"completed\" && context.Get<object?>(\"resumeResult.terminal_evidence\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1691,13 +1692,13 @@
       "maxRetries": 3,
       "id": "transition.route_resume_invalid",
       "name": "Repair invalid resume result",
-      "description": "Keep the replan route blocked until the same \u0060loom agent resume\u0060 result has a recognized status and required terminal evidence.",
+      "description": "Keep the replan route blocked until the same `loom agent resume` result has a recognized status and required terminal evidence.",
       "targetNodeId": "state.replan_runtime_result",
       "outputPath": "resumeResult",
       "priority": 1000,
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) != null",
+        "source": "context.Get<string>(\"resumeResult.status\") != null",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -1711,12 +1712,13 @@
     }
   },
   "templateKind": "so-governed-target-skill",
+  "ownerSkillSlug": "loom-plan-execution",
   "taskType": "skill_enhancement",
   "workflowKind": "target_skill_enhancement",
   "caseId": "loom-plan-execution",
   "runId": "template:loom-plan-execution",
   "runtimeBinding": "dotnet-so",
-  "runtimeVersion": "0.5.2-beta",
+  "runtimeVersion": "0.5.8-beta",
   "expressionBinding": {
     "language": "csharp",
     "languageVersion": "12",
@@ -1742,7 +1744,7 @@
         "description": "Require a fresh guide surface from the selected published SO runtime before any downstream review or authoring work.",
         "passExpression": {
           "kind": "predicate",
-          "source": "context.Has(\u0022resolved_guide_surface_ref\u0022)",
+          "source": "context.Has(\"resolved_guide_surface_ref\")",
           "resultType": "bool"
         },
         "requiredOutputFamilies": [
@@ -1764,7 +1766,7 @@
               "path": "assets/so-workflow/skill-plan.md",
               "startLine": 15,
               "endLine": 15,
-              "quote": "3. Capture a fresh direct \u0060loom.exe --guide\u0060 or \u0060loom --guide\u0060 result before downstream edits."
+              "quote": "3. Capture a fresh direct `loom.exe --guide` or `loom --guide` result before downstream edits."
             }
           ]
         }
@@ -1773,7 +1775,7 @@
         "description": "Compile-review gate for the Loom Agent Plan-Execution Orchestrator governance enhancement template.",
         "passExpression": {
           "kind": "predicate",
-          "source": "context.Has(\u0022workflow_mermaid_md\u0022) \u0026\u0026 context.Has(\u0022workflow_html\u0022) \u0026\u0026 context.Has(\u0022workflow_analysis_json\u0022) \u0026\u0026 context.Has(\u0022workflow_dataflow_json\u0022) \u0026\u0026 context.Has(\u0022workflow_compile_feedback\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022workflow_compile_feedback.status\u0022) == \u0022succeeded\u0022",
+          "source": "context.Has(\"workflow_mermaid_md\") && context.Has(\"workflow_html\") && context.Has(\"workflow_analysis_json\") && context.Has(\"workflow_dataflow_json\") && context.Has(\"workflow_compile_feedback\") && context.Get<string>(\"workflow_compile_feedback.status\") == \"succeeded\"",
           "resultType": "bool"
         },
         "requiredOutputFamilies": [
@@ -1804,7 +1806,7 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Compile-review evidence is missing or the generated Mermaid, HTML, and analysis artifacts do not describe the current workflow.",
-          "nextAction": "Dispatch the workflow designer, repair the authoritative template, rerun \u0060loom skill compile\u0060 through the same unified \u0060loom\u0060 apphost, and return fresh workflow_mermaid_md, workflow_html, workflow_analysis_json, workflow_dataflow_json, and workflow_compile_feedback before continuing.",
+          "nextAction": "Dispatch the workflow designer, repair the authoritative template, rerun `loom skill compile` through the same unified `loom` apphost, and return fresh workflow_mermaid_md, workflow_html, workflow_analysis_json, workflow_dataflow_json, and workflow_compile_feedback before continuing.",
           "evidenceReferences": [
             {
               "path": "assets/so-workflow/skill-plan.md",
@@ -1819,7 +1821,7 @@
         "description": "Strongest runtime-owned blocked-boundary evidence gate for the official runnable route.",
         "passExpression": {
           "kind": "predicate",
-          "source": "context.Has(\u0022workflow_runtime_copy_json\u0022) \u0026\u0026 context.Has(\u0022event_log_file\u0022)",
+          "source": "context.Has(\"workflow_runtime_copy_json\") && context.Has(\"event_log_file\")",
           "resultType": "bool"
         },
         "requiredOutputFamilies": [
@@ -1842,9 +1844,15 @@
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 269,
-              "endLine": 269,
-              "quote": "- If the runtime returns a blocked state, preserve its evidence and resume the same workflow copy. Continue until terminal completion or a documented unrecoverable failure; a blocked payload alone is never completion."
+              "startLine": 112,
+              "endLine": 112,
+              "quote": "7. Run Loom Agent Plan-Execution Orchestrator with that same external WorkflowInstance copy; every later `resume` must reuse its persisted runtime state."
+            },
+            {
+              "path": "SKILL.md",
+              "startLine": 114,
+              "endLine": 114,
+              "quote": "9. When the current route is confirmed blocked, persist the current workflow state, blocker report, all attempted remedies and their outcomes, and the relevant event/audit references before asking the AO planner to replan."
             }
           ]
         }
@@ -1853,7 +1861,7 @@
         "description": "Terminal gate for official runnable route to final Done.",
         "passExpression": {
           "kind": "predicate",
-          "source": "context.Has(\u0022checked_in_skill_markdown_asset\u0022) \u0026\u0026 context.Has(\u0022checked_in_workflow_designer_asset\u0022) \u0026\u0026 context.Has(\u0022workflow_runtime_copy_json\u0022) \u0026\u0026 context.Has(\u0022event_log_file\u0022) \u0026\u0026 false",
+          "source": "context.Has(\"checked_in_skill_markdown_asset\") && context.Has(\"checked_in_workflow_designer_asset\") && context.Has(\"workflow_runtime_copy_json\") && context.Has(\"event_log_file\") && false",
           "resultType": "bool"
         },
         "requiredOutputFamilies": [
@@ -1893,7 +1901,7 @@
         "description": "Blocked-route history gate proving the planner received the current state, blocker, attempts, outcomes, and evidence before redesign.",
         "passExpression": {
           "kind": "predicate",
-          "source": "context.Has(\u0022replan_history\u0022) \u0026\u0026 context.Has(\u0022blocker_report\u0022) \u0026\u0026 context.Has(\u0022attempt_history\u0022) \u0026\u0026 context.Has(\u0022audit_artifacts\u0022) \u0026\u0026 context.Has(\u0022event_log_file\u0022)",
+          "source": "context.Has(\"replan_history\") && context.Has(\"blocker_report\") && context.Has(\"attempt_history\") && context.Has(\"audit_artifacts\") && context.Has(\"event_log_file\")",
           "resultType": "bool"
         },
         "requiredOutputFamilies": [
@@ -1938,7 +1946,7 @@
         "description": "Replan gate proving the selected anchor and strategy produce a viable path to the terminal business outcome.",
         "passExpression": {
           "kind": "predicate",
-          "source": "context.Has(\u0022candidate_terminal_path\u0022) \u0026\u0026 context.Has(\u0022replan_evidence_references\u0022) \u0026\u0026 context.Has(\u0022replan_anchor\u0022) \u0026\u0026 context.Has(\u0022replan_strategy\u0022)",
+          "source": "context.Has(\"candidate_terminal_path\") && context.Has(\"replan_evidence_references\") && context.Has(\"replan_anchor\") && context.Has(\"replan_strategy\")",
           "resultType": "bool"
         },
         "requiredOutputFamilies": [
@@ -1971,16 +1979,16 @@
               "path": "reference/ao-skill-reference.md",
               "startLine": 91,
               "endLine": 91,
-              "quote": "Every strategy must produce a candidate path that can reach the terminal business outcome. A workaround must additionally provide a rollback plan. Do not silently erase failed attempts, blocker history, or previous route decisions when generating \u0060prompt-replan\u0060 input."
+              "quote": "Every strategy must produce a candidate path that can reach the terminal business outcome. A workaround must additionally provide a rollback plan. Do not silently erase failed attempts, blocker history, or previous route decisions when generating `prompt-replan` input."
             }
           ]
         }
       },
       "gate.runtime_package_ready": {
-        "description": "Before Loom Agent Plan-Execution Orchestrator governance work, prove the exact published unified \u0060Techne.Loom.Runtime.\u003Crid\u003E\u0060 package has passed integrity checks and was safely extracted.",
+        "description": "Before Loom Agent Plan-Execution Orchestrator governance work, prove the exact published unified `Techne.Loom.Runtime.<rid>` package has passed integrity checks and was safely extracted.",
         "passExpression": {
           "kind": "predicate",
-          "source": "context.Has(\u0022published_package_workflow_evidence\u0022) \u0026\u0026 context.Has(\u0022runtime_preflight_result\u0022) \u0026\u0026 context.Has(\u0022resolved_runtime_version_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_package_identity_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_extraction_directory_ref\u0022)",
+          "source": "context.Has(\"published_package_workflow_evidence\") && context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_package_identity_ref\") && context.Has(\"runtime_extraction_directory_ref\")",
           "resultType": "bool"
         },
         "requiredOutputFamilies": [
@@ -2008,13 +2016,13 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Exact unified Loom runtime package identity, checksum, manifest, archive, extraction, or version evidence is missing.",
-          "nextAction": "Acquire the exact locked unified \u0060Techne.Loom.Runtime.\u003Crid\u003E\u0060 package, verify its SHA-512 and archive contents, extract it safely, and return package and apphost evidence before continuing.",
+          "nextAction": "Acquire the exact locked unified `Techne.Loom.Runtime.<rid>` package, verify its SHA-512 and archive contents, extract it safely, and return package and apphost evidence before continuing.",
           "evidenceReferences": [
             {
               "path": "reference/packages.beta.md",
               "startLine": 27,
               "endLine": 27,
-              "quote": "Before extraction, validate package ID, exact version, RID, nuspec, \u0060runtime.json\u0060, archive paths and sizes, apphost, and English guide assets. Extract only after validation. Run \u0060loom.exe --guide\u0060 on Windows or \u0060loom --guide\u0060 on Unix as the first runtime operation. After the guide is readable, route this skill\u0027s commands through \u0060loom agent\u0060."
+              "quote": "Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after validation. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. After the guide is readable, route this skill's commands through `loom agent`."
             }
           ]
         }
@@ -2042,7 +2050,6 @@
     "declaredUserOwnedFields": [
       "approval_decision",
       "feedback_notes",
-      "terminal_business_objective",
       "governanceScope"
     ],
     "reservedRuntimeOwnedFields": [

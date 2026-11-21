@@ -3,8 +3,8 @@
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [English](../../en/guides/so-guide-reference-governance.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.5.8
-构建：已发布的 0.5.8 包
+版本：0.5.9-beta
+构建：已发布的 0.5.9-beta 包
 <!-- guide-version:end -->
 
 
@@ -166,10 +166,10 @@ MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 ga
 这个命令会一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs`。其中两个可执行示例是普通 `.cs` 文件；把它们的路径传给 `--script-file` 和 `--verify-script`，不需要 project 文件，也不需要额外安装 C# script runtime。请使用同一份 runtime 通过 `compile --workflow-file <path>` 校验生成的 demo。除非明确要求作为交付物，否则生成文件必须放在 skill 目录之外。
 
 ```guide-template
-.\loom.exe skill compile --workflow-file so-template.json --audit-output outputs/audit
+.\loom.exe skill compile --workflow-file my-skill--so-template.json --audit-output outputs/audit
 ```
 
-`so-template.json` 仍然是 checked-in source template。`outputs/audit` 也必须放在 skill 文件夹之外。
+`my-skill--so-template.json` 是 `my-skill` 的受版本控制源模板。属于 skill 的模板和执行副本必须声明与所属 skill 目录一致的 `ownerSkillSlug`，并使用 `<ownerSkillSlug>--<purpose>.json` 命名；升级旧 skill 时同样适用。设计器和 compile 会拒绝不符合规则的输出名称。没有 skill 所属者的普通 workflow 不受此命名规则约束。`outputs/audit` 也必须放在 skill 文件夹之外。
 
 对 `/loom-skill-enhancement` 和任何 skill being enhanced under Loom Skill Orchestrator governance，不要把直接修改 checked-in workflow JSON 当作常规维护路径。只有当前直接 apphost 路径完全 blocked，且用户明确同意狭义变通方案时，才允许做最小的直接 JSON 修改以打通下一次 apphost `compile`、`run` 或 `resume`；随后必须立刻回到同一个发布 apphost 路径。
 
@@ -185,10 +185,10 @@ MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 ga
 Compile 还会在 `workflow.mermaid.md`、`workflow.html` 和 `workflow.json` 旁边写出 `workflow.analysis.json`。用这份 analysis artifact 在执行前审阅控制流结构：branch、switch-like group、loop、所需输入、发布的输出族、用户 seam、运行时 seam 和 gate 覆盖。
 
 ```guide-template
-.\loom.exe skill run --workflow-file workflow.current.json --context-file context.json --audit-output outputs/audit
+.\loom.exe skill run --workflow-file my-skill--workflow.current.json --context-file context.json --audit-output outputs/audit
 ```
 
-`workflow.current.json` 是在 skill 文件夹之外创建的可变 runtime copy。不要把 `--workflow-file` 指回 `<target-skill-root>/assets/so-workflow/`，`outputs/audit` 也不要放在那里。启动一轮新的正式 run 时才需要创建新的 runtime copy；后续 resume 必须继续使用同一份已持久化的 runtime copy，而不是重新从 checked-in source asset 重建。
+`my-skill--workflow.current.json` 是在 skill 文件夹之外创建的可变 runtime copy。不要把 `--workflow-file` 指回 `<target-skill-root>/assets/so-workflow/`，`outputs/audit` 也不要放在那里。启动新的正式 run 时才创建新副本；后续 resume 必须继续使用该持久化副本并保留其 `caseId` 和 `runId`，不得从源资产重新复制。
 
 ```guide-template
 {
@@ -201,14 +201,14 @@ Compile 还会在 `workflow.mermaid.md`、`workflow.html` 和 `workflow.json` �
 ```
 
 ```guide-template
-.\loom.exe skill resume --workflow-file workflow.current.json --result-file external-step-result.json
+.\loom.exe skill resume --workflow-file my-skill--workflow.current.json --result-file external-step-result.json
 ```
 
 Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source template。
 
 ```guide-checklist
 - workflow JSON 在执行前已物化
-- checked-in source template 保持干净；run/resume 只针对外部可变 workflow copy，例如 `workflow.current.json`
+- checked-in source template 保持干净；run/resume 只针对外部可变 workflow copy，例如 `my-skill--workflow.current.json`
 - 每次启动新的正式 run 链时，都要先从 checked-in source asset 复制出新的外部 workflow 执行文件
 - resume 必须沿用该 run 链中同一份已持久化的 runtime workflow copy
 - 直接 workflow JSON 修改不是常规治理路径；blocked 状态下的应急变通必须先得到用户明确许可，并在修改后立刻回到直接 SO apphost

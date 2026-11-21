@@ -117,7 +117,7 @@ public sealed class PlanExecutionDesignerEvidenceContractTests
         Assert.Equal(new[] { "schemaVersion", "producerName", "candidate_path", "static_review_path", "verdict" }, required);
         Assert.Equal("loom.plan.so-template-refresh.v1", root.GetProperty("properties").GetProperty("schemaVersion").GetProperty("const").GetString());
         Assert.Equal("loom-skill-enhancement Workflow Designer", root.GetProperty("properties").GetProperty("producerName").GetProperty("const").GetString());
-        using var template = JsonDocument.Parse(File.ReadAllText(Path.Combine(skill, "assets", "so-workflow", "so-template.json")));
+        using var template = JsonDocument.Parse(File.ReadAllText(Path.Combine(skill, "assets", "so-workflow", "loom-plan-execution--so-template.json")));
         var parameters = template.RootElement.GetProperty("nodes").GetProperty("transition.refresh_governed_template").GetProperty("command").GetProperty("parameters");
         Assert.Contains("loom-skill-enhancement Workflow Designer", parameters.GetProperty("skillHint").GetString());
         Assert.Contains("template-refresh.schema.json", parameters.GetProperty("skillHint").GetString());
@@ -396,7 +396,7 @@ public sealed class PlanExecutionDesignerEvidenceContractTests
             ["record_path"] = "review.json"
         }
     };
-    private static WorkflowInstance LoadWorkflow() => WorkflowJsonSerializer.Deserialize(File.ReadAllText(Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json")));
+    private static WorkflowInstance LoadWorkflow() => WorkflowJsonSerializer.Deserialize(File.ReadAllText(Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "loom-plan-execution--so-template.json")));
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

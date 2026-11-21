@@ -198,7 +198,7 @@ public static class WorkflowSchemaDemoExporter
     {
         return new WorkflowSchemaContract(
             SchemaId: "techne-loom.workflow-instance",
-            SchemaVersion: "2",
+            SchemaVersion: "3",
             RuntimeType: "Techne.Loom.Abstractions.TaskTracking.Model.WorkflowInstance",
             PropertyNamingPolicy: "camelCase",
             NodeStorage: "object keyed by node id",
@@ -314,7 +314,7 @@ public static class WorkflowSchemaDemoExporter
                 "Legacy firstSuccess and firstResponse strategy values must be explicitly migrated to firstPass.",
                 "Aggregation groups must declare a joinTargetStateId, and pass/error routes must reference state nodes.",
                 "The root expressionBinding uses C# and detailedCompileFeedbackV1.",
-                "Governed templates must declare taskType, workflowKind, caseId, and runId; enhancement kinds require skill_enhancement, while target_skill_business requires a target-specific business task.",
+                "Skill-owned templates must declare ownerSkillSlug and use <ownerSkillSlug>--<purpose>.json for the template and every execution copy; generic workflows may omit the owner. Compile and load reject missing or mismatched skill ownership and filenames. Governed templates also declare taskType, workflowKind, caseId, and runId; enhancement kinds require skill_enhancement, while target_skill_business requires a target-specific business task.",
             ]);
     }
 

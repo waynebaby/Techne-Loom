@@ -75,7 +75,7 @@ public sealed class SchemaDemoExportBehaviorTests
 
             using var schemaDocument = JsonDocument.Parse(await File.ReadAllTextAsync(schemaFile!));
             Assert.Equal("techne-loom.workflow-instance", schemaDocument.RootElement.GetProperty("schemaId").GetString());
-            Assert.Equal("2", schemaDocument.RootElement.GetProperty("schemaVersion").GetString());
+            Assert.Equal("3", schemaDocument.RootElement.GetProperty("schemaVersion").GetString());
             var allowedStrategies = schemaDocument.RootElement.GetProperty("allowedValues").GetProperty("concurrencyStrategy").EnumerateArray().Select(static item => item.GetString()).ToArray();
             Assert.Equal(new[] { "firstPass", "whenAnyResponse", "whenAnyPass", "whenAllPass", "whenExpression" }, allowedStrategies);
             var groupFields = schemaDocument.RootElement.GetProperty("transitionGroupFields").EnumerateArray().Select(static item => item.GetString()).ToArray();
@@ -131,8 +131,10 @@ public sealed class SchemaDemoExportBehaviorTests
         }
     }
 
-    [Fact]
-    public async Task FragmentDesignCommandsResumeAcrossProcessesAndCompileAnIndependentCandidate()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FragmentDesignCommandsResumeAcrossProcessesAndCompileAnIndependentCandidate(bool owned)
     {
         var repoRoot = FindRepositoryRoot();
         var sourceDirectory = Directory.CreateTempSubdirectory("loom-fragment-cli-test-").FullName;
@@ -140,10 +142,17 @@ public sealed class SchemaDemoExportBehaviorTests
         try
         {
             var demo = await WorkflowSchemaDemoExporter.WriteAsync(sourceDirectory, "dotnet-so", SkillCli.GetRuntimeVersion());
-            var baseline = await File.ReadAllTextAsync(demo.DemoFile);
+            var baselineFile = owned ? Path.Combine(sourceDirectory, "sample-skill--baseline.json") : demo.DemoFile;
+            if (owned)
+            {
+                var ownedWorkflow = WorkflowDraftImport.Read(await File.ReadAllTextAsync(demo.DemoFile));
+                ownedWorkflow.OwnerSkillSlug = "sample-skill";
+                await File.WriteAllTextAsync(baselineFile, WorkflowJsonSerializer.Serialize(ownedWorkflow));
+            }
+            var baseline = await File.ReadAllTextAsync(baselineFile);
             var scope = Path.Combine(sourceDirectory, "scope.json");
             await File.WriteAllTextAsync(scope, """[{"kind":"state","owner":"state.start"}]""");
-            var start = await RunCliAsync(repoRoot, $"fragment-design start --workflow-file \"{demo.DemoFile}\" --scope-file \"{scope}\"");
+            var start = await RunCliAsync(repoRoot, $"fragment-design start --workflow-file \"{baselineFile}\" --scope-file \"{scope}\"");
             Assert.True(start.ExitCode == 0, start.StdOut + start.StdErr);
             using var started = JsonDocument.Parse(start.StdOut);
             sessionDirectory = started.RootElement.GetProperty("session_dir").GetString();
@@ -196,10 +205,12 @@ public sealed class SchemaDemoExportBehaviorTests
             using var composed = JsonDocument.Parse(compose.StdOut);
             var candidate = composed.RootElement.GetProperty("candidate_file").GetString();
             Assert.NotNull(candidate);
+            Assert.StartsWith(owned ? "sample-skill--candidate-" : "candidate-", Path.GetFileName(candidate), StringComparison.Ordinal);
+            Assert.EndsWith(".json", candidate, StringComparison.Ordinal);
             Assert.True(Directory.Exists(composed.RootElement.GetProperty("compile_audit_path").GetString()));
             var instance = WorkflowDraftImport.Read(await File.ReadAllTextAsync(candidate));
             Assert.Equal("Design fixture update.", instance.Nodes["state.start"].Description);
-            Assert.Equal(baseline, await File.ReadAllTextAsync(demo.DemoFile));
+            Assert.Equal(baseline, await File.ReadAllTextAsync(baselineFile));
             Assert.Contains("Validation artifacts:", compose.StdErr, StringComparison.Ordinal);
         }
         finally
@@ -212,8 +223,10 @@ public sealed class SchemaDemoExportBehaviorTests
         }
     }
 
-    [Fact]
-    public async Task FragmentBlueprintBuildsOnlyAfterIsolatedFragmentsFormACompleteDraft()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FragmentBlueprintBuildsOnlyAfterIsolatedFragmentsFormACompleteDraft(bool owned)
     {
         var repo = FindRepositoryRoot();
         var root = Directory.CreateTempSubdirectory("loom-blueprint-test-").FullName;
@@ -223,6 +236,10 @@ public sealed class SchemaDemoExportBehaviorTests
         {
             var demo = await WorkflowSchemaDemoExporter.WriteAsync(root, "dotnet-so", SkillCli.GetRuntimeVersion());
             var original = JsonNode.Parse(await File.ReadAllTextAsync(demo.DemoFile))!;
+            if (owned)
+            {
+                original["ownerSkillSlug"] = "sample-skill";
+            }
             var manifest = new JsonObject
             {
                 ["schema"] = "loom.workflow-fragment-blueprint.v1",
@@ -247,7 +264,7 @@ public sealed class SchemaDemoExportBehaviorTests
             var rejected = await RunCliAsync(repo, $"fragment-design build --design-file \"{designPath}\"");
             Assert.NotEqual(0, rejected.ExitCode);
 
-            foreach (var key in new[] { "startNodeId", "endNodeId", "templateKind", "context", "contractBinding", "expressionBinding" })
+            foreach (var key in new[] { "startNodeId", "endNodeId", "templateKind", "ownerSkillSlug", "context", "contractBinding", "expressionBinding" })
             {
                 manifest[key] = original[key]?.DeepClone();
             }
@@ -332,6 +349,7 @@ public sealed class SchemaDemoExportBehaviorTests
             using var receipt = JsonDocument.Parse(build.StdOut);
             var candidate = receipt.RootElement.GetProperty("candidate_file").GetString();
             Assert.NotNull(candidate);
+            Assert.Equal(owned ? "sample-skill--candidate.json" : "candidate.json", Path.GetFileName(candidate));
             candidateDirectory = Path.GetDirectoryName(candidate);
             Assert.True(JsonNode.DeepEquals(original, JsonNode.Parse(await File.ReadAllTextAsync(candidate))));
         }

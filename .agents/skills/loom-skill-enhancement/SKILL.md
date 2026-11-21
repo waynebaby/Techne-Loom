@@ -15,7 +15,7 @@ Keep this entrypoint at or below 200 lines. Detailed contracts live in this skil
 ## Runtime Version
 
 <!-- skill-package-version-block:start -->
-- Current published Loom runtime version for the Skill module: `0.5.8`.
+- Current published Loom runtime version for the Skill module: `0.5.9-beta`.
 - This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
 <!-- skill-package-version-block:end -->
 
@@ -88,7 +88,7 @@ After each post-execution progress report from `/loom-skill-enhancement` or a sk
 
 ## Stable Assets
 
-- `assets/so-workflow/so-template.json`
+- `assets/so-workflow/loom-skill-enhancement--so-template.json`
 - `assets/so-workflow/so-package-lock.json`
 - `assets/so-workflow/node-to-file-map.md`
 - `assets/so-workflow/governance-notes.md`

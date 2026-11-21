@@ -65,7 +65,8 @@ public sealed record WorkflowFragmentSummary(
     DateTimeOffset? LastActivityUtc,
     IReadOnlyList<string> ContextKeys,
     bool ContextKeysTruncated,
-    IReadOnlyList<WorkflowFragmentTransitionSummary> CurrentTransitions);
+    IReadOnlyList<WorkflowFragmentTransitionSummary> CurrentTransitions,
+    string? OwnerSkillSlug = null);
 
 public sealed record WorkflowFragmentResult(
     WorkflowFragmentSummary Summary,

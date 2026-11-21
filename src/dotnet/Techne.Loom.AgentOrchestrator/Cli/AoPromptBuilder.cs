@@ -895,6 +895,7 @@ Return ONLY the complete C# workflow script source.
         return new WorkflowRootFieldContractBlockContent(
         [
             new WorkflowRootFieldRule("instanceId", "caller-managed workflow identifier", "Keep stable for the generated or modified file.", true),
+            new WorkflowRootFieldRule("ownerSkillSlug", "owning skill directory slug", "For skill-owned workflows, use the exact lowercase kebab-case skill folder name and name each source template and execution copy '<ownerSkillSlug>--<purpose>.json'; generic AO workflows may omit this field.", false),
             new WorkflowRootFieldRule("nodes", "node dictionary", "Serialize every node with the polymorphic kind discriminator and stable ids.", true),
             new WorkflowRootFieldRule("startNodeId", "entry state", "Point to the first state node for a new workflow.", true),
             new WorkflowRootFieldRule("currentNodeId", "current execution state", "For new files this usually matches startNodeId; for replans it must reflect the current runtime seam.", true),

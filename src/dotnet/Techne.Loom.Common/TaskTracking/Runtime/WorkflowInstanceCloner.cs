@@ -13,6 +13,7 @@ public static class WorkflowInstanceCloner
             CurrentNodeId = source.CurrentNodeId,
             EndNodeId = source.EndNodeId,
             TemplateKind = source.TemplateKind,
+            OwnerSkillSlug = source.OwnerSkillSlug,
             TaskType = source.TaskType,
             WorkflowKind = source.WorkflowKind,
             CaseId = source.CaseId,
