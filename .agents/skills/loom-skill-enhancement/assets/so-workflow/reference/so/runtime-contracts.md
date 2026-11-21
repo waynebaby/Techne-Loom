@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.5.9-beta`
-- source_sha256: `c93288afe1d1577a002a9ea9b4e39abcf4fe9ed534b68929e758796efcd2acd6`
-- source_package_sha512: `UNCJArqeVi56DJvlfAbRBS3VbCPSP+mzmEOn7fxB/fE/+uC1iKcqaDDYmYbMdMgyz27B4oyCL0cv9H04jfNg+Q==`
-- target_bound_version: `0.5.9-beta`
+- source_version: `0.5.10-beta`
+- source_sha256: `5ccadf64cf960d43285de2739321d94aeb3396d8491050ffa6243326f4ae4e90`
+- source_package_sha512: `Td+dxj2JRjHQ3H2WWMSTfpvyJHK2zT9QoNwDEhcQJQdrcouAyJK9aRQvJSTYzt+YcE3e+GXKm9F3VsiCNykM4w==`
+- target_bound_version: `0.5.10-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete Skill-module contracts page extracted fro
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.9-beta
-Build: published package 0.5.9-beta
+Version: 0.5.10-beta
+Build: published package 0.5.10-beta
 <!-- guide-version:end -->
+
 
 
 
