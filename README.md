@@ -7,9 +7,9 @@
 
 ## 🚀 Release Notes · `v0.5.9-beta` · November 2026
 
-> **released release — synced by publish actions.**
+> **beta release — synced by publish actions.**
 > Install the single Loom runtime package matching the host RID; verify its `.sha512` sidecar before extraction.
-> Full package list → [`packages.released.md`](packages.released.md)
+> Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### 📦 Packages In This Release
 
