@@ -165,3 +165,15 @@ For phase-sliced workflows, follow [the phase-sliced design contract](./assets/a
 When a local workflow-designer reference is missing or unreadable, follow that agent's `Missing Reference Fallback` section before reporting a blocker.
 
 After exact package validation, capture the first fresh guide by running `loom.exe --guide` on Windows or `loom --guide` on Unix.
+
+## Direct Guide Bootstrap
+
+After acquiring and extracting the exact runtime package, directly run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. Verify the returned version and contained, readable guide paths before downstream work; do not insert an MCP or fragment preflight.
+
+## Missing Reference Fallback
+
+For a missing or unreadable skill-local reference, check its exact relative path in the active skill copy, then the same normalized skill-relative path in a matching user-level installation. Verify the same skill and declared version, record attempted and selected paths, and do not mix copies or replace authoritative runtime guide/schema/demo evidence. If no matching readable copy exists, stop only dependent work. Follow the workflow designer's [Missing Reference Fallback](assets/agents/loom-skill-enhancement-workflow-designer.agent.md#missing-reference-fallback) for the complete lookup.
+
+## Workflow Designer Contract
+
+Count only authored state nodes, excluding transitions and synthetic harness nodes. Use whole-workflow design below 40; when there are 40 or more authored state nodes, freeze a `loom.workflow-skeleton.v1` design view and use `skeleton-check`, `phase-compile`, impact analysis, and merge. Keep each phase at or below 25 authored state nodes as a soft cap; allow at most three repair attempts per phase and two post-merge full-compile repair rounds. Return `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`.
