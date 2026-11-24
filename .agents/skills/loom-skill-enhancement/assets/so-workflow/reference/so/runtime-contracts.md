@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `released`
-- source_version: `0.5.9`
-- source_sha256: `c27ee70be16a172dd8b24d67690a67a00e9ab75acf49e8126fd2c276e7e531b4`
-- source_package_sha512: `5WGzyFkz7NZT4NsJ8Ov5G3ETG1vNa16cuCPwJNqbvPo/wn331ArwSRyB4Vc5x+1rp0rSXlfyHq/kzhz/eUW6iQ==`
-- target_bound_version: `0.5.9`
+- source_channel: `beta`
+- source_version: `0.5.11-beta`
+- source_sha256: `f1901d3e4c2f449ec9257c8ba8ddb0914dc87b8e53414b25a743a0ed77df8c12`
+- source_package_sha512: `R/nSmVlmDV2KI9ug7aEE9Hrzd6BG9r5m+M//t/eXvfYBiLXYXHL71VxnCxuTaEjPcSPfpbWYtmJR1cRaiM3DKA==`
+- target_bound_version: `0.5.11-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete Skill-module contracts page extracted fro
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.9
-Build: published package 0.5.9
+Version: 0.5.11-beta
+Build: published package 0.5.11-beta
 <!-- guide-version:end -->
+
 
 
 

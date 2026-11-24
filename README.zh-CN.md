@@ -5,24 +5,24 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.5.9` · 2026 年 11 月
+## 🚀 发布说明 · `v0.5.11-beta` · 2026 年 11 月
 
-> **released 发布版本 — 由发布工作流自动同步。**
+> **beta 发布版本 — 由发布工作流自动同步。**
 > 请选择与主机 RID 匹配的统一 Loom runtime package，并在解压前校验 `.sha512` sidecar。
-> 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
+> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Runtime.win-x64 0.5.9
-Techne.Loom.Runtime.win-arm64 0.5.9
-Techne.Loom.Runtime.linux-x64 0.5.9
-Techne.Loom.Runtime.linux-arm64 0.5.9
-Techne.Loom.Runtime.linux-musl-x64 0.5.9
-Techne.Loom.Runtime.linux-musl-arm64 0.5.9
-Techne.Loom.Runtime.osx-x64 0.5.9
-Techne.Loom.Runtime.osx-arm64 0.5.9
-Techne.Loom.Abstractions 0.5.9
+Techne.Loom.Runtime.win-x64 0.5.11-beta
+Techne.Loom.Runtime.win-arm64 0.5.11-beta
+Techne.Loom.Runtime.linux-x64 0.5.11-beta
+Techne.Loom.Runtime.linux-arm64 0.5.11-beta
+Techne.Loom.Runtime.linux-musl-x64 0.5.11-beta
+Techne.Loom.Runtime.linux-musl-arm64 0.5.11-beta
+Techne.Loom.Runtime.osx-x64 0.5.11-beta
+Techne.Loom.Runtime.osx-arm64 0.5.11-beta
+Techne.Loom.Abstractions 0.5.11-beta
 ```
 
 > 本清单会在每次对应通道发布后自动更新，不再发布浮动包别名。

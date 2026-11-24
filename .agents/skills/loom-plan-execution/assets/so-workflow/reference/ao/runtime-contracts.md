@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `released`
-- source_version: `0.5.9`
-- source_sha256: `9517706c275702236945097ad50f8b11b349d524b3b139125f911415f577a796`
-- source_package_sha512: `5WGzyFkz7NZT4NsJ8Ov5G3ETG1vNa16cuCPwJNqbvPo/wn331ArwSRyB4Vc5x+1rp0rSXlfyHq/kzhz/eUW6iQ==`
-- target_bound_version: `0.5.9`
+- source_channel: `beta`
+- source_version: `0.5.11-beta`
+- source_sha256: `bb0ab10fabfaff0fa34c2aa614a2b54de3882c26018cf811e70746a151abe734`
+- source_package_sha512: `R/nSmVlmDV2KI9ug7aEE9Hrzd6BG9r5m+M//t/eXvfYBiLXYXHL71VxnCxuTaEjPcSPfpbWYtmJR1cRaiM3DKA==`
+- target_bound_version: `0.5.11-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete Agent-module contracts page extracted fro
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.9
-Build: published package 0.5.9
+Version: 0.5.11-beta
+Build: published package 0.5.11-beta
 <!-- guide-version:end -->
+
 
 
 

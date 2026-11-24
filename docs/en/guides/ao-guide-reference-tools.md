@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/ao-guide-reference-tools.md) | [Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
 
 <!-- guide-version:start -->
-Version: 0.5.9
-Build: published package 0.5.9
+Version: 0.5.11-beta
+Build: published package 0.5.11-beta
 <!-- guide-version:end -->
+
 
 
 
