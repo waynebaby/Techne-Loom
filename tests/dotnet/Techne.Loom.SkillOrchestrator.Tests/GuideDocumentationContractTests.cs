@@ -166,6 +166,43 @@ public sealed class GuideDocumentationContractTests
     }
 
     [Fact]
+    public void SyntheticApprovalConnectivityPolicyIsNarrowAndExplicit()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        string Read(string relativePath) => File.ReadAllText(Path.Combine(
+            repositoryRoot,
+            relativePath.Replace('/', Path.DirectorySeparatorChar)));
+
+        var governance = Read(".github/instructions/loom-skill-governance.instructions.md");
+        var planning = Read(".agents/skills/loom-skill-enhancement/reference/planning-and-validation.md");
+        var review = Read(".agents/skills/loom-skill-enhancement/reference/review-and-evidence-contract.md");
+        var skill = Read(".agents/skills/loom-skill-enhancement/SKILL.md");
+        var rootGuidance = Read("AGENTS.md");
+
+        var policySources = new[] { governance, planning, review, skill, rootGuidance };
+        Assert.Contains("Only in an explicitly isolated connectivity test", review, StringComparison.Ordinal);
+        Assert.Contains("no live business data, external side effects, or consequential actions", review, StringComparison.Ordinal);
+        Assert.Contains("synthetic approval/review inputs pass through a supported test path", review, StringComparison.Ordinal);
+        Assert.Contains("cannot satisfy official gates", review, StringComparison.Ordinal);
+        Assert.Contains("must never be used to fabricate a workflow receipt", review, StringComparison.Ordinal);
+
+        foreach (var source in new[] { governance, planning, skill, rootGuidance })
+        {
+            Assert.Contains("Only in an explicitly isolated connectivity test", source, StringComparison.Ordinal);
+            Assert.Contains("dedicated test workflow copy, case/run state, session/store, and artifact root", source, StringComparison.Ordinal);
+            Assert.Contains("cannot satisfy an official/business approval gate", source, StringComparison.Ordinal);
+            Assert.Contains("must not be used to fabricate a workflow receipt", source, StringComparison.Ordinal);
+        }
+
+        var connectivityPolicy = governance.Split("Only in an explicitly isolated connectivity test", StringSplitOptions.None)[1]
+            .Split('\n', 2)[0];
+        Assert.Contains("clearly marked synthetic approval/review inputs", connectivityPolicy, StringComparison.Ordinal);
+        Assert.Contains("no live business data, external side effects, or consequential actions", connectivityPolicy, StringComparison.Ordinal);
+        Assert.Contains("only the enhancement submission's connectivity-test criterion", connectivityPolicy, StringComparison.Ordinal);
+        Assert.Contains("cannot satisfy an official/business approval gate", connectivityPolicy, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AgentQuestionsAndDependencyAcquisitionFollowSharedPolicies()
     {
         var repositoryRoot = FindRepositoryRoot();
