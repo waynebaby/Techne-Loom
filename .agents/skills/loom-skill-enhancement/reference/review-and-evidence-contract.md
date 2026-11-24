@@ -90,6 +90,8 @@ Plan synthetic cases as independent scenarios, not as worker slots. Before execu
 
 Retain a separate scenario-level record in the existing test/review evidence: scenario ID, synthetic input, expected outcome, pass condition, actual observed evidence, independent verdict, and synthetic designation. Do not create a separate scenario template. A synthetic pass cannot replace real business validation, a real external-system result, authorization, or human approval. A worker result or aggregate alone does not prove each scenario passed.
 
+Only in an explicitly isolated connectivity test may clearly marked synthetic approval/review inputs be passed through a supported test path to exercise downstream routing. Isolation requires a dedicated test workflow copy, case/run state, session/store, and artifact root; no live business data, external side effects, or consequential actions; and synthetic labels on every input and result. This may satisfy only the enhancement submission's connectivity-test criterion; all other submission requirements still apply. It is not a genuine approval, review decision, authorization, human approval, or real business evidence, cannot satisfy an official/business approval gate, and must not be used to fabricate a workflow receipt.
+
 Collect every expected result in a batch before one aggregation, then make one coordinated repair pass. Rerun only checks whose files or inputs changed and their proven dependents; do not repeat unchanged checks for reassurance. Diagnose failures, preserve unresolved evidence, and avoid unbounded retries. Parallelism can reduce wall-clock time only when startup, coordination, and resource contention do not dominate; do not promise a universal speedup.
 ### Autonomous Enhancement Evidence
 
